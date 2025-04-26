@@ -95,6 +95,18 @@ lemlib::ControllerSettings angular_controller(2,   // proportional gain (kP)
 											  0	   // maximum acceleration (slew)
 );
 
+lemlib::ExpoDriveCurve
+	steer_curve(3,	  // joystick deadband out of 127
+				10,	  // minimum output where drivetrain will move out of 127
+				1.019 // expo curve gain0
+	);
+
+lemlib::ExpoDriveCurve
+	throttle_curve(3,	 // joystick deadband out of 127
+				   10,	 // minimum output where drivetrain will move out of 127
+				   1.019 // expo curve gain
+	);
+
 lemlib::Chassis chassis(drivetrain,			// drivetrain settings
 						lateral_controller, // lateral PID settings
 						angular_controller, // angular PID settings
@@ -307,51 +319,66 @@ void wallPID()
 bool isRed = IS_RED;
 float hue = -1;
 bool sort = true;
-std::queue<bool> rings;
-int previousRed = 0;
 int currentRed = 0;
 bool hasCurrent = false;
 bool hasPrevious = false;
 int proximity = 0;
+int previousColour = 0;
+int previousDist = 0;
+int ringColour = 0;
+// 0 is none, 1 is red, 2 is blue
 
+int distance = 0;
+std::deque<int> intakeQ;
+// 1 is a red ring, 2 is a blue ring
 void colorSort()
 {
-
 	ring_color.set_led_pwm(100);
+	intakeQ.clear();
 	pros::delay(10);
 	while (true)
 	{
 		hue = ring_color.get_hue();
-		// proximity = ring_color.get_proximity();
+		distance = ring_distance.get_distance();
 
 		if (sort)
 		{
-			if ((hue < 30) && (300 > RING_PROXIMITY))
+			if ((hue < 30) && (proximity > RING_PROXIMITY))
 			{
-				if (!IS_RED)
+				ringColour = 1;
+			}
+			else if ((hue > 100) && (proximity > RING_PROXIMITY))
+			{
+				ringColour = 2;
+			}
+			else
+			{
+				ringColour = 0;
+			}
+
+			if (ringColour != previousColour && ringColour != 0)
+			{
+				intakeQ.push_back(ringColour);
+			}
+
+			previousColour = ringColour;
+
+			if (distance < RING_DISTANCE_THRESHOLD && previousDist >= RING_DISTANCE_THRESHOLD && !intakeQ.empty())
+			{
+				if ((IS_RED && intakeQ.front() == 2) || (!IS_RED && intakeQ.front() == 1))
 				{
-					// pros::delay(100); //was 200
-					intakeBackward();
-					pros::delay(500);
+					pros::delay(40);
+					intakeStop();
+					pros::delay(400);
 					intakeForward();
 				}
-				// detects previous red
-				// previousRed = 2;
+
+				intakeQ.pop_front();
 			}
-			else if ((hue > 100) && (300 > RING_PROXIMITY))
-			{
-				// detects previous blue
-				// previousRed = 1;
-				if (IS_RED)
-				{
-					pros::delay(200);
-					intakeBackward();
-					pros::delay(200);
-					intakeForward();
-				}
-			}
-			pros::delay(10);
+
+			previousDist = distance;
 		}
+		pros::delay(10);
 	}
 }
 
