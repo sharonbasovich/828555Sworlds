@@ -7,6 +7,7 @@
 
 // drive motors
 #define IS_RED true
+#define LB_SPEED 0.5 // 0-1 the speed of the lb in manual mode
 
 #define LEFT_FRONT_DRIVE 1
 #define LEFT_MIDDLE_DRIVE -2
@@ -71,7 +72,7 @@ inline pros::Motor intakeMotor(INTAKE_HOOKS);
 inline pros::adi::Pneumatics clamp(CLAMP, false);
 inline pros::adi::Pneumatics lDoinker(LDOINKER, false);
 inline pros::adi::Pneumatics rDoinker(RDOINKER, false);
-inline pros::adi::Pneumatics lift(LIFT, true);
+inline pros::adi::Pneumatics lift(LIFT, false);
 
 inline pros::Distance ring_distance(RING_DISTANCE);
 inline pros::Optical ring_color(RING_COLOR);

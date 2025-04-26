@@ -14,6 +14,8 @@ int state = 0;
 double target = 0;
 double toutput = 0;
 bool doPID = true;
+bool doHoldPID = false;
+double holdTarget = 0;
 
 lemlib::Drivetrain drivetrain(&left_mg,					  // left motor group
 							  &right_mg,				  // right motor group
@@ -62,13 +64,6 @@ lemlib::Chassis chassis(drivetrain,			// drivetrain settings
 );
 
 /**
- * A callback function for LLEMU's center button.
- *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
- */
-
-/**
  * Runs initialization code. This occurs as soon as the program is started.
  *
  * All other competition modes are blocked by initialize; it is recommended
@@ -78,8 +73,6 @@ void initialize()
 {
 	pros::lcd::initialize();
 	lbRotation.set_position(20000);
-	pros::delay(10);
-	lift.extend();
 	pros::delay(10);
 	ring_color.set_integration_time(10);
 	pros::delay(10);
@@ -98,7 +91,7 @@ void initialize()
             // pros::lcd::print(3, "IMU HEADING: %f", imu.get_heading());
 
 			pros::lcd::print(0, "intake velocity: %f", intakeMotor.get_actual_velocity()); //
-			pros::lcd::print(1, "intake velocity: %d", lbRotation.get_angle()/100); //
+			pros::lcd::print(1, "lbangle: %d", lbRotation.get_position()/100); //
 			pros::lcd::print(2, " state: %d", state);
 			pros::lcd::print(3, "dopid: %d", doPID);
 			pros::delay(20);
@@ -170,16 +163,17 @@ void intakeStop()
 	pros::delay(10);
 }
 
+bool jam = true;
+
 void antiJam()
 {
-	bool jammed = false;
+	float threshold = 40;
 	bool previous = intakeMotor.get_actual_velocity();
 	while (true)
 	{
-
-		if (intake)
+		if (intake && jam && (state != 1) && (!lift.is_extended()))
 		{
-			if (intakeMotor.get_actual_velocity() < 140.0 && previous < 140.0)
+			if (intakeMotor.get_actual_velocity() < threshold && previous < threshold)
 			{
 				intakeBackward();
 				pros::delay(200);
@@ -188,7 +182,40 @@ void antiJam()
 			}
 		}
 		previous = intakeMotor.get_actual_velocity();
-		pros::delay(300);
+		pros::delay(500);
+	}
+}
+
+void holdPID()
+{
+
+	const double tkP = 0.8; //
+	const double tkI = 0;	// 00004;//lower the more perscise
+	const double tkD = 0.5; // 4larger the stronger the the kD is so response is quicker
+	const double kCos = 20;
+
+	double terror = 0;
+	double tprevious_error = 0;
+	double tintegral = 0;
+	double tderivative = 0;
+
+	while (true)
+	{
+
+		if (doHoldPID)
+		{
+			wallAngle = lbRotation.get_position() / 100;
+			terror = holdTarget - wallAngle;
+			tintegral += terror;
+			tderivative = terror - tprevious_error;
+			toutput = tkP * terror + tkI * tintegral + tkD * tderivative;
+			// lbMotor.move(toutput);
+			lbMotor.move(cos(((lbRotation.get_position() / 100)) * 0.017453) * kCos);
+			//  wall_motor.move(cos(((wall_rotation.get_position() / 100) - 40) * 0.017453) * kCos);
+			// wall_motor.move(toutput);
+			tprevious_error = terror;
+		}
+		pros::delay(20);
 	}
 }
 
@@ -196,7 +223,7 @@ void wallPID()
 {
 
 	double bottom = 200;
-	double load = 165;
+	double load = 167;
 	double score = 35;
 
 	const double tkP = 1.4; //
@@ -211,32 +238,33 @@ void wallPID()
 
 	while (true)
 	{
-		switch (state)
-		{
-		case 0:
-			target = bottom;
-			break;
-		case 1:
-			target = load;
-			break;
-		case 2:
-			target = score;
-			break;
-
-		default:
-			target = bottom;
-			break;
-		}
 
 		if (doPID)
 		{
+			switch (state)
+			{
+			case 0:
+				target = bottom;
+				break;
+			case 1:
+				target = load;
+				break;
+			case 2:
+				target = score;
+				break;
+
+			default:
+				target = bottom;
+				break;
+			}
+
 			wallAngle = lbRotation.get_position() / 100;
 			terror = target - wallAngle;
 			tintegral += terror;
 			tderivative = terror - tprevious_error;
 			toutput = tkP * terror + tkI * tintegral + tkD * tderivative;
 			// lbMotor.move(toutput);
-			lbMotor.move(toutput + cos(((lbRotation.get_position() / 100) - 40) * 0.017453) * kCos);
+			lbMotor.move(toutput + cos(((lbRotation.get_position() / 100)) * 0.017453) * kCos);
 			//  wall_motor.move(cos(((wall_rotation.get_position() / 100) - 40) * 0.017453) * kCos);
 			// wall_motor.move(toutput);
 			tprevious_error = terror;
@@ -299,7 +327,8 @@ void colorSort()
 void opcontrol()
 {
 	pros::Task wallstake_task(wallPID);
-	// pros::Task antiJam_task(antiJam);
+	pros::Task holdstake_task(holdPID);
+	pros::Task antiJam_task(antiJam);
 	// pros::Task sort_task(colorSort);
 	bool holdLB = false;
 	int preCatch = 1; // 1 is precatch, -1 is needs press again, 0 is in postcatch
@@ -314,11 +343,16 @@ void opcontrol()
 		int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
 		// move the robot
-		chassis.arcade(leftY, rightX); ///UNCOMMENT
+		chassis.arcade(leftY, rightX); /// UNCOMMENT
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
 			sort = false;
+		}
+
+		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
+		{
+			jam = !jam;
 		}
 
 		// extend clamp on press
@@ -410,11 +444,11 @@ void opcontrol()
 			if (state != 0)
 			{
 				state--;
-			}
-			if (!intake)
-			{
-				cooldown = 20;
-				check = true;
+				if (!intake)
+				{
+					cooldown = 20;
+					check = true;
+				}
 			}
 		}
 
@@ -431,11 +465,15 @@ void opcontrol()
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X))
 		{
+
 			doPID = !doPID;
 			if (doPID)
 			{
+				doHoldPID = false;
 				lbMotor.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-			} else {
+			}
+			else
+			{
 				lbMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 			}
 
@@ -446,15 +484,20 @@ void opcontrol()
 		{
 			if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 			{
-				lbMotor.move(-127);
+				lbMotor.move(-127 * LB_SPEED);
+				doHoldPID = false;
 			}
 			else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 			{
-				lbMotor.move(127);
+				lbMotor.move(127 * LB_SPEED);
+				doHoldPID = false;
 			}
 			else
 			{
-				lbMotor.move(0);
+				if(!doHoldPID) {
+					holdTarget = lbRotation.get_position() / 100;
+				}
+				doHoldPID = true;
 			}
 		}
 
