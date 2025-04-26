@@ -36,7 +36,7 @@
 
 // sensors
 #define LB_ROTATION 8
-#define IMU 12
+#define IMU 14
 #define VERTICAL_ODOM 16
 #define HORIZONTAL_ODOM -13
 

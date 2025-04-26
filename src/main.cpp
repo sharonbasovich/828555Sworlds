@@ -2,6 +2,7 @@
 #include "config.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include <queue>
+#include "functions.h"
 
 // toggles
 bool intake = false;
@@ -17,6 +18,44 @@ bool doPID = true;
 bool doHoldPID = false;
 double holdTarget = 0;
 
+class MockIMU : public pros::Imu
+{
+public:
+	MockIMU(int port, double gain)
+		: pros::Imu(port), imu_gain(gain) {}
+
+	double get_rotation() const override
+	{
+		double raw = pros::Imu::get_rotation();
+		if (raw == PROS_ERR_F)
+			return NAN;
+		return raw * imu_gain;
+	}
+
+private:
+	double imu_gain;
+};
+
+MockIMU imu(IMU, 360.0 / 360.0);
+
+//spin right decreases 1.3 degrees
+// 358.6, 357.0, 355.6
+
+//360/361.5
+// 358.2, 355.5, 354.6
+
+// 361.5/360
+//  358.3, 356.1, 354.9
+
+//spin left
+// 1.5, 2.9, 4.3 
+
+//360/361.5
+//1.3, 3.1, 4.8
+
+// 361.5/360
+// 1.2, 2.2, 4.4
+
 lemlib::Drivetrain drivetrain(&left_mg,					  // left motor group
 							  &right_mg,				  // right motor group
 							  11,						  // 12 inch track width
@@ -29,7 +68,7 @@ lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
 							nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
 							nullptr, // horizontal tracking wheel 1
 							nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
-							nullptr	 // inertial sensor
+							&imu	 // inertial sensor
 );
 
 // lateral PID controller
@@ -94,6 +133,7 @@ void initialize()
 			pros::lcd::print(1, "lbangle: %d", lbRotation.get_position()/100); //
 			pros::lcd::print(2, " state: %d", state);
 			pros::lcd::print(3, "dopid: %d", doPID);
+			pros::lcd::print(4, "IMULEFT %f", imu.get_heading());
 			pros::delay(20);
         } });
 }
@@ -127,7 +167,14 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+	while(true) {
+		chassis.turnToHeading(180, 2000);
+		pros::delay(2000);
+		chassis.turnToHeading(0, 2000);
+		pros::delay(2000);
+	}
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -145,23 +192,7 @@ void autonomous() {}
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-void intakeForward()
-{
-	intakeMotor.move(127);
-	pros::delay(10);
-}
 
-void intakeBackward()
-{
-	intakeMotor.move(-127);
-	pros::delay(10);
-}
-
-void intakeStop()
-{
-	intakeMotor.move(0);
-	pros::delay(10);
-}
 
 bool jam = true;
 
