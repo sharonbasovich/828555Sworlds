@@ -37,8 +37,8 @@
 // sensors
 #define LB_ROTATION 8
 #define IMU 14
-#define VERTICAL_ODOM 16
-#define HORIZONTAL_ODOM -13
+#define VERTICAL_ODOM 13
+#define HORIZONTAL_ODOM 0 //not for now
 
 // ring hold
 #define RING_DISTANCE 7
@@ -66,8 +66,7 @@ inline pros::Rotation lbRotation(LB_ROTATION);
 inline pros::Motor lbMotor(LB_MOTOR);
 
 inline pros::Motor intakeMotor(INTAKE_HOOKS);
-
-// inline pros::Imu imu(IMU);
+//inline pros::Imu imu(IMU);
 
 inline pros::adi::Pneumatics clamp(CLAMP, false);
 inline pros::adi::Pneumatics lDoinker(LDOINKER, false);
