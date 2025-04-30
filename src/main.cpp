@@ -128,7 +128,7 @@ void initialize()
 	ring_color.set_integration_time(10);
 	pros::delay(10);
 	ring_color.disable_gesture();
-	pros::delay(10);
+	pros::delay(10); 
 	chassis.calibrate(); // calibrate sensors
 	pros::delay(10);
 	pros::lcd::initialize(); // initialize brain screen
@@ -232,7 +232,7 @@ void antiJam()
 void holdPID()
 {
 
-	const double tkP = 0.8; //
+	const double tkP = 0.7; //
 	const double tkI = 0;	// 00004;//lower the more perscise
 	const double tkD = 0.5; // 4larger the stronger the the kD is so response is quicker
 	const double kCos = 20;
@@ -269,9 +269,9 @@ void wallPID()
 	double load = 167;
 	double score = 35;
 
-	const double tkP = 1.4; //
+	const double tkP = 1.2; //
 	const double tkI = 0;	// 00004;//lower the more perscise
-	const double tkD = 1.0; // 4larger the stronger the the kD is so response is quicker
+	const double tkD = 3.0; // 4larger the stronger the the kD is so response is quicker
 	const double kCos = 8.5;
 
 	double terror = 0;
@@ -386,7 +386,7 @@ void opcontrol()
 {
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
-	pros::Task antiJam_task(antiJam);
+	// pros::Task antiJam_task(antiJam);
 	// pros::Task sort_task(colorSort);
 	bool holdLB = false;
 	int preCatch = 1; // 1 is precatch, -1 is needs press again, 0 is in postcatch
