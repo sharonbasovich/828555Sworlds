@@ -194,6 +194,160 @@ void autonomous()
 	}
 }
 
+void SAWP()
+{
+	// === Set Start Position ===
+	chassis.setPose(151, -30, 50);
+	state += 2;
+
+	// === Turn to Face Mogo and Move to It ===
+	chassis.turnToHeading(80, 2000);
+	pros::delay(1000);
+	chassis.moveToPoint(76, -53, 2000);
+	clamp.extend();
+	intakeForward();
+
+	// === Move to Ring 1 and Intake ===
+	chassis.moveToPose(64, -113, 200, 2000);
+	pros::delay(1000);
+
+	// === Move to Ring 2 and Drop Ring ===
+	chassis.turnToHeading(30, 3000);
+	pros::delay(1000);
+	chassis.moveToPose(134, 26, 30, 2000);
+	pros::delay(1000);
+
+	// === Move to Ring 3 ===
+	chassis.turnToHeading(310, 2000);
+	clamp.retract();
+	pros::delay(1000);
+	chassis.moveToPose(71, 112, 310, 2000);
+	pros::delay(1000);
+
+	// === Drop Goal, Turn, and Clamp Second Goal ===
+	chassis.turnToHeading(0, 1000);
+	pros::delay(500);
+	chassis.moveToPose(60, 75, 0, 2000);
+	pros::delay(500);
+	clamp.extend();
+
+	// === Move to Touch Bar ===
+	chassis.turnToHeading(180, 1000);
+	pros::delay(500);
+	chassis.moveToPoint(33, -4, 2000);
+}
+
+void MiddleMogoBLUE()
+{
+	// === Set Start Position ===
+	chassis.setPose(53, -24, 90); // mirrored X and heading
+
+	// === Move to Mobile Goal 1 and Clamp ===
+	chassis.moveToPoint(23, -24, 2000);
+	pros::delay(1000);
+	clamp.extend();
+	pros::delay(250);
+
+	// === Turn to Face Center and Move to Middle ===
+	chassis.turnToHeading(120, 1000);
+	pros::delay(250);
+	chassis.moveToPose(11, -10, 120, 2000);
+	pros::delay(200);
+	rDoinker.extend();
+	pros::delay(500);
+
+	// === Go to Second Ring in Middle and Clamp ===
+	chassis.turnToHeading(150, 1000);
+	pros::delay(250);
+	chassis.moveToPoint(6, -8, 2000); // slow
+	pros::delay(200);
+	lDoinker.extend();
+	pros::delay(1000);
+
+	// === Move Back and Align Rings ===
+	chassis.moveToPose(43, -32, 90, 2000);
+	pros::delay(1000);
+	lDoinker.retract();
+	rDoinker.retract();
+	pros::delay(200);
+
+	// === Move to First Ring and Score on Mogo ===
+	chassis.moveToPose(23, -24, 120, 2000);
+	intakeForward();
+	pros::delay(500);
+
+	// === Score Final 2 Rings ===
+	chassis.turnToHeading(0, 2000);
+	pros::delay(1000);
+	chassis.moveToPose(23, -49, 0, 2000);
+
+	// === Move to Corner ===
+	chassis.moveToPose(57, -61, 115, 2000);
+	pros::delay(1000);
+
+	// === Leave Corner ===
+	chassis.turnToHeading(110, 2000);
+	pros::delay(1000);
+	clamp.retract();
+	chassis.moveToPoint(16.15, -56, 2000);
+}
+
+void MiddleMogoRED()
+{
+	// === Set Start Position ===
+	chassis.setPose(-53, -24, 270);
+
+	// === Move to Mobile Goal 1 and Clamp ===
+	chassis.moveToPoint(-23, -24, 2000);
+	pros::delay(1000);
+	clamp.extend();
+	pros::delay(250);
+
+	// === Turn to Face Center and Move to Middle ===
+	chassis.turnToHeading(60, 1000);
+	pros::delay(250);
+	chassis.moveToPose(-11, -10, 60, 2000);
+	pros::delay(200);
+	rDoinker.extend();
+	pros::delay(500);
+
+	// === Go to Second Ring in Middle and Clamp ===
+	chassis.turnToHeading(30, 1000);
+	pros::delay(250);
+	chassis.moveToPoint(-6, -8, 2000); // slow
+	pros::delay(200);
+	lDoinker.extend();
+	pros::delay(1000);
+
+	// === Move Back and Align Rings ===
+	chassis.moveToPose(-43, -32, 90, 2000);
+	pros::delay(1000);
+	lDoinker.retract();
+	rDoinker.retract();
+	pros::delay(200);
+
+	// === Move to First Ring and Score on Mogo ===
+	chassis.moveToPose(-23, -24, 60, 2000);
+	intakeForward();
+	pros::delay(500);
+
+	// === Score Final 2 Rings ===
+	chassis.turnToHeading(180, 2000);
+	pros::delay(1000);
+	chassis.moveToPose(-23, -49, 180, 2000);
+
+	// === Move to Corner ===
+	chassis.moveToPose(-57, -61, 245, 2000);
+	pros::delay(1000);
+
+	// === Leave Corner ===
+	chassis.turnToHeading(70, 2000);
+	pros::delay(1000);
+	clamp.retract();
+	chassis.moveToPoint(-16.15, -56, 2000);
+
+}
+
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -277,7 +431,7 @@ void wallPID()
 
 	const double tkP = 1.4; //
 	const double tkI = 0;	// 00004;//lower the more perscise
-	const double tkD = 1.0; // 4larger the stronger the the kD is so response is quicker
+	const double tkD = 0.5; // 4larger the stronger the the kD is so response is quicker
 	const double kCos = 8.5;
 
 	double terror = 0;
