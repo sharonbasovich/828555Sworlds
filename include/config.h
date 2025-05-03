@@ -29,9 +29,9 @@
 #define LB_MOTOR 16
 
 // pneumatics
-#define LDOINKER 'B'
+#define LDOINKER 'A'
 #define CLAMP 'H'
-#define RDOINKER 'A'
+#define RDOINKER 'B'
 #define LIFT 'G' // h
 
 // sensors

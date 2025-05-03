@@ -72,7 +72,7 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 );
 
 // lateral PID controller
-lemlib::ControllerSettings lateral_controller(6,  // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(9,  // proportional gain (kP)
 											  0,   // integral gain (kI)
 											  20,   // derivative gain (kD)
 											  0,   // anti windup
@@ -84,7 +84,7 @@ lemlib::ControllerSettings lateral_controller(6,  // proportional gain (kP)
 );
 
 // angular PID controller
-lemlib::ControllerSettings angular_controller(3.5,   // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(3.2,   // proportional gain (kP)
 											  0,   // integral gain (kI)
 											  28,  // derivative gain (kD)
 											  0,   // anti windup
@@ -181,18 +181,7 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous()
-{
-	// set position to x:0, y:0, heading:0
-	while (true){
-		chassis.setPose(0, 0, 0);
-		// turn to face heading 90 with a very long timeout
-		chassis.moveToPoint(0, 48, 4000);
-		pros::delay(2500);
-		chassis.moveToPoint(0,0, 4000, {.forwards = false});
-		pros::delay(2500);
-	}
-}
+
 
 void SAWP()
 {
@@ -295,50 +284,64 @@ void MiddleMogoBLUE()
 void MiddleMogoRED()
 {
 	// === Set Start Position ===
-	chassis.setPose(-53, -24, 270);
+	chassis.setPose(-56., -24, 270);
 
 	// === Move to Mobile Goal 1 and Clamp ===
-	chassis.moveToPoint(-23, -24, 2000);
+	chassis.moveToPoint(-23, -24, 1000, {.forwards = false, .maxSpeed = 80});
 	pros::delay(1000);
 	clamp.extend();
+	intakeForward();
 	pros::delay(250);
+	intakeStop();
 
 	// === Turn to Face Center and Move to Middle ===
-	chassis.turnToHeading(60, 1000);
+	chassis.turnToHeading(40, 250);
 	pros::delay(250);
-	chassis.moveToPose(-11, -10, 60, 2000);
-	pros::delay(200);
-	rDoinker.extend();
-	pros::delay(500);
+	chassis.moveToPoint(-8.5, -9, 1250, {.maxSpeed = 40});
+	pros::delay(1250);
+	chassis.turnToHeading(60,250);
+	lDoinker.extend();
 
 	// === Go to Second Ring in Middle and Clamp ===
-	chassis.turnToHeading(30, 1000);
-	pros::delay(250);
-	chassis.moveToPoint(-6, -8, 2000); // slow
-	pros::delay(200);
-	lDoinker.extend();
-	pros::delay(1000);
 
+	pros::delay(500);
+	chassis.turnToHeading(35,500);
+	pros::delay(500);
+	rDoinker.extend();
+	pros::delay(500);
 	// === Move Back and Align Rings ===
-	chassis.moveToPose(-43, -32, 90, 2000);
-	pros::delay(1000);
+	chassis.moveToPoint(-45,-32, 1500, {.forwards = false});
+
+	pros::delay(1500);
+	chassis.turnToHeading(90,500);
 	lDoinker.retract();
 	rDoinker.retract();
-	pros::delay(200);
-
-	// === Move to First Ring and Score on Mogo ===
-	chassis.moveToPose(-23, -24, 60, 2000);
-	intakeForward();
 	pros::delay(500);
-
-	// === Score Final 2 Rings ===
-	chassis.turnToHeading(180, 2000);
+	// === Move to First Ring and Score on Mogo ===
+	intakeForward();
+	chassis.moveToPoint(-37,-6, 1000, {.forwards = false});
 	pros::delay(1000);
-	chassis.moveToPose(-23, -49, 180, 2000);
+	// 2. Drive to (-25, -21), exit early so the next turn can start sooner
+	chassis.moveToPoint(-28,-13, 1250, {.earlyExitRange = 3});
+	
+	chassis.moveToPoint(-23,-23, 1250, {.earlyExitRange = 3});
+	
+	// === Score Final 2 Rings ==
+
+	// 4. Drive to final position (-23, -55), again with early exit to prevent stall
+	chassis.moveToPoint(-23, -53, 1200, {.maxSpeed = 80, .earlyExitRange = 3});
 
 	// === Move to Corner ===
-	chassis.moveToPose(-57, -61, 245, 2000);
+	chassis.moveToPoint(-37,-44, 500, {.forwards = false});
+	chassis.moveToPoint(-72, -71, 2000);
+	pros::delay(2000);
+	chassis.moveToPoint(-50,-54, 1000, {.forwards = false});
 	pros::delay(1000);
+	chassis.moveToPoint(-72,-71,1000);
+	pros::delay(1000);
+	chassis.moveToPoint(-50,-54, 1000, {.forwards = false});
+	pros::delay(1000);
+
 
 	// === Leave Corner ===
 	chassis.turnToHeading(70, 2000);
@@ -346,6 +349,23 @@ void MiddleMogoRED()
 	clamp.retract();
 	chassis.moveToPoint(-16.15, -56, 2000);
 
+}
+void autonomous()
+{
+	// set position to x:0, y:0, heading:0
+	// while (true){
+	// 	chassis.setPose(0, 0, 0);
+	// 	//turn to face heading 90 with a very long timeout
+	// 	chassis.moveToPose(0, 48, 0, 4000 );
+	// 	pros::delay(5000);
+	// 	chassis.moveToPose(0, 0, 0, 4000, {.forwards = false});
+	// 	pros::delay(5000);
+	// chassis.turnToHeading(180,2000);
+	// pros::delay(2000);
+	// chassis.turnToHeading(0, 2000);
+	// pros::delay(2000);
+	//}
+	MiddleMogoRED();
 }
 
 /**
