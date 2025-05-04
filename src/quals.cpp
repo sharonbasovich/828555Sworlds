@@ -21,4 +21,3 @@ void intakeStop()
     intakeMotor.move(0);
     pros::delay(10);
 }
-
