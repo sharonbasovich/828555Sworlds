@@ -524,63 +524,67 @@ void MiddleMogoRED()
 
 	// === Move to Mobile Goal 1 and Clamp ===
 	chassis.moveToPoint(-23, -24, 1000, {.forwards = false, .maxSpeed = 80});
-	pros::delay(1000);
+	pros::delay(800);
 	clamp.extend();
+	pros::delay(50);
 	intakeForward();
 	pros::delay(250);
-	intakeStop();
 
 	// === Turn to Face Center and Move to Middle ===
 	chassis.turnToHeading(40, 250);
 	pros::delay(250);
-	chassis.moveToPoint(-8.5, -9, 1250, {.maxSpeed = 40});
-	pros::delay(1250);
-	chassis.turnToHeading(60, 250);
+	intakeStop();
+	// chassis.moveToPoint(-13, -6, 1250, {.maxSpeed = 40});//-9.5, -11
+	chassis.moveToPoint(-15, -10, 1000, {.maxSpeed = 40}); //-9.5, -11
+
+	// pros::delay(1000);
+	chassis.turnToHeading(70, 500, {.maxSpeed = 90}); // 400
+	// pros::delay(400);
+	chassis.moveToPoint(-12, -5, 750, {.maxSpeed = 40}); // 750
+	pros::delay(650);
 	lDoinker.extend();
 
 	// === Go to Second Ring in Middle and Clamp ===
 
-	pros::delay(500);
-	chassis.turnToHeading(35, 500);
+	pros::delay(400);
+	chassis.turnToHeading(52, 700); // 500
 	pros::delay(500);
 	rDoinker.extend();
-	pros::delay(500);
+	// pros::delay(100);
 	// === Move Back and Align Rings ===
-	chassis.moveToPoint(-45, -32, 1500, {.forwards = false});
-
-	pros::delay(1500);
+	chassis.moveToPoint(-44, -36, 1300, {.forwards = false});
 	chassis.turnToHeading(90, 500);
+	pros::delay(500);
 	lDoinker.retract();
 	rDoinker.retract();
-	pros::delay(500);
+	pros::delay(300);
 	// === Move to First Ring and Score on Mogo ===
 	intakeForward();
-	chassis.moveToPoint(-37, -6, 1000, {.forwards = false});
+	chassis.moveToPoint(-37, -6, 1000, {.forwards = false}); // drive back
 	pros::delay(1000);
 	// 2. Drive to (-25, -21), exit early so the next turn can start sooner
-	chassis.moveToPoint(-28, -13, 1250, {.earlyExitRange = 3});
-
-	chassis.moveToPoint(-23, -23, 1250, {.earlyExitRange = 3});
+	chassis.turnToPoint(-25, -23, 350);
+	pros::delay(350);
+	chassis.moveToPoint(-29, -23, 1250, {.earlyExitRange = 3});
 
 	// === Score Final 2 Rings ==
 
 	// 4. Drive to final position (-23, -55), again with early exit to prevent stall
-	chassis.moveToPoint(-23, -53, 1200, {.maxSpeed = 80, .earlyExitRange = 3});
+	chassis.moveToPoint(-23, -51, 2200, {.maxSpeed = 30, .earlyExitRange = 3});
 
 	// === Move to Corner ===
 	chassis.moveToPoint(-37, -44, 500, {.forwards = false});
-	chassis.moveToPoint(-72, -71, 2000);
-	pros::delay(2000);
-	chassis.moveToPoint(-50, -54, 1000, {.forwards = false});
+
+	chassis.moveToPoint(-77, -77, 2000, {.minSpeed = 127});
+	pros::delay(1500);
+	chassis.moveToPoint(-50, -52, 1000, {.forwards = false});
 	pros::delay(1000);
-	chassis.moveToPoint(-72, -71, 1000);
+	chassis.moveToPoint(-59, -61, 1000);
 	pros::delay(1000);
 	chassis.moveToPoint(-50, -54, 1000, {.forwards = false});
 	pros::delay(1000);
 
 	// === Leave Corner ===
-	chassis.turnToHeading(70, 2000);
-	pros::delay(1000);
 	clamp.retract();
 	chassis.moveToPoint(-16.15, -56, 2000);
 }
@@ -589,9 +593,10 @@ void autonomous()
 	pros::Task ringhold_task(holdRing);
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
+	pros::Task sort_task(colorSort);
 	sawp();
+	// MiddleMogoRED();
 	// pros::Task antiJam_task(antiJam);
-	// pros::Task sort_task(colorSort);
 }
 
 /**
@@ -612,7 +617,7 @@ void opcontrol()
 {
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
-	pros::Task antiJam_task(antiJam);
+	// pros::Task antiJam_task(antiJam);
 	// pros::Task sort_task(colorSort);
 	sort = true;
 	// loop forever

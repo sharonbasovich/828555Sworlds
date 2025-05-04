@@ -6,7 +6,7 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 
 // drive motors
-#define IS_RED false
+#define IS_RED true
 #define LB_SPEED 0.5 // 0-1 the speed of the lb in manual mode
 
 #define LEFT_FRONT_DRIVE 1
