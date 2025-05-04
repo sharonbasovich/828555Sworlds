@@ -6,7 +6,7 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 
 // drive motors
-#define IS_RED true
+#define IS_RED false
 #define LB_SPEED 0.5 // 0-1 the speed of the lb in manual mode
 
 #define LEFT_FRONT_DRIVE 1
@@ -41,13 +41,13 @@
 #define HORIZONTAL_ODOM 0 //not for now
 
 // ring hold
-#define RING_DISTANCE 7
+#define RING_DISTANCE 6
 //**IN MILLIMETERS** the value that the ring must be closer than to be detected
-#define RING_DISTANCE_THRESHOLD 100
-#define RING_PROXIMITY 100
+#define RING_DISTANCE_THRESHOLD 20
+#define RING_PROXIMITY 200
 
 // color sort
-#define RING_COLOR 2
+#define RING_COLOR 7
 //*IN MILLISECONDS* the time that it takes for the ring to reach the top of the hooks from when the color sensor detects it*/
 #define COLOR_TIME 500
 inline pros::Controller master(pros::E_CONTROLLER_MASTER);
