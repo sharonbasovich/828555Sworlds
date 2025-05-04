@@ -36,22 +36,22 @@ private:
 	double imu_gain;
 };
 
-MockIMU imu(IMU, 361.5 /360.0);
+MockIMU imu(IMU, 361.5 / 360.0);
 
-//spin right decreases 1.3 degrees
-// 358.6, 357.0, 355.6
+// spin right decreases 1.3 degrees
+//  358.6, 357.0, 355.6
 
-//360/361.5
-// 358.2, 355.5, 354.6
+// 360/361.5
+//  358.2, 355.5, 354.6
 
 // 361.5/360
 //  358.3, 356.1, 354.9
 
-//spin left
-// 1.5, 2.9, 4.3 
+// spin left
+//  1.5, 2.9, 4.3
 
-//360/361.5
-//1.3, 3.1, 4.8
+// 360/361.5
+// 1.3, 3.1, 4.8
 
 // 361.5/360
 // 1.2, 2.2, 4.4
@@ -65,16 +65,16 @@ lemlib::Drivetrain drivetrain(&left_mg,					  // left motor group
 );
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_odom, lemlib::Omniwheel::NEW_2, 0.5);
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel 1, set to null
-							nullptr,		// vertical tracking wheel 2, set to nullptr as we are using IMEs
-							nullptr,		// horizontal tracking wheel 1
-							nullptr,		// horizontal tracking wheel 2, set to nullptr as we don't have a second one
-							&imu			// inertial sensor
+							nullptr,				  // vertical tracking wheel 2, set to nullptr as we are using IMEs
+							nullptr,				  // horizontal tracking wheel 1
+							nullptr,				  // horizontal tracking wheel 2, set to nullptr as we don't have a second one
+							&imu					  // inertial sensor
 );
 
 // lateral PID controller
-lemlib::ControllerSettings lateral_controller(6,  // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(6,   // proportional gain (kP)
 											  0,   // integral gain (kI)
-											  20,   // derivative gain (kD)
+											  20,  // derivative gain (kD)
 											  0,   // anti windup
 											  0,   // small error range, in inches
 											  100, // small error range timeout, in milliseconds
@@ -84,14 +84,14 @@ lemlib::ControllerSettings lateral_controller(6,  // proportional gain (kP)
 );
 
 // angular PID controller
-lemlib::ControllerSettings angular_controller(3.5,   // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(3.5, // proportional gain (kP)
 											  0,   // integral gain (kI)
 											  28,  // derivative gain (kD)
 											  0,   // anti windup
 											  0,   // small error range, in degrees
-											  0, // small error range timeout, in milliseconds
+											  0,   // small error range timeout, in milliseconds
 											  0,   // large error range, in degrees
-											  0, // large error range timeout, in milliseconds
+											  0,   // large error range timeout, in milliseconds
 											  0	   // maximum acceleration (slew)
 );
 
@@ -128,7 +128,7 @@ void initialize()
 	ring_color.set_integration_time(10);
 	pros::delay(10);
 	ring_color.disable_gesture();
-	pros::delay(10); 
+	pros::delay(10);
 	chassis.calibrate(); // calibrate sensors
 	pros::delay(10);
 	pros::lcd::initialize(); // initialize brain screen
@@ -183,15 +183,11 @@ void competition_initialize() {}
  */
 void autonomous()
 {
-	// set position to x:0, y:0, heading:0
-	while (true){
-		chassis.setPose(0, 0, 0);
-		// turn to face heading 90 with a very long timeout
-		chassis.moveToPoint(0, 48, 4000);
-		pros::delay(2500);
-		chassis.moveToPoint(0,0, 4000, {.forwards = false});
-		pros::delay(2500);
-	}
+	pros::Task ringhold_task(holdRing);
+	pros::Task wallstake_task(wallPID);
+	pros::Task holdstake_task(holdPID);
+	// pros::Task antiJam_task(antiJam);
+	// pros::Task sort_task(colorSort);
 }
 
 /**
@@ -209,8 +205,6 @@ void autonomous()
  */
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-
-
 
 bool jam = true;
 
@@ -319,6 +313,34 @@ void wallPID()
 			tprevious_error = terror;
 		}
 		pros::delay(20);
+	}
+}
+
+bool hold = false;
+bool hasRing = false;
+int holdProximity = 0;
+void holdRing()
+{
+	// detects if ring is held or not
+	// hasRing is constantly updated for if a ring is detected or not
+	// set hold to true if intake should stop to hold ring when it is detected or false otherwise
+	while (true)
+	{
+		holdProximity = ring_color.get_proximity();
+		if (holdProximity > 100)
+		{
+			if (hold)
+			{
+				// pros::delay(100);
+				intakeMotor.move(0);
+			}
+			hasRing = true;
+		}
+		else
+		{
+			hasRing = false;
+		}
+		pros::delay(10);
 	}
 }
 
@@ -558,7 +580,8 @@ void opcontrol()
 			}
 			else
 			{
-				if(!doHoldPID) {
+				if (!doHoldPID)
+				{
 					holdTarget = lbRotation.get_position() / 100;
 				}
 				doHoldPID = true;
@@ -584,4 +607,41 @@ void opcontrol()
 		// delay to save resources
 		pros::delay(10);
 	}
+}
+
+void blueRingRush()
+{
+	// this is for blue side, which is when you are on the right side negative corner
+	chassis.setPose(50, 25, 290);
+	intakeForward();
+	hold = true;
+	rDoinker.extend();
+	// rush to ring cluster
+	chassis.moveToPoint(15, 40, 1500, {.minSpeed = 127});
+	rDoinker.retract();
+	// pull rings backward - one in intake one on doinker
+	chassis.moveToPoint(39, 34, 1000, {.forwards = false});
+
+	// turn to, go to, and clamp mogo
+	chassis.turnToPoint(29, 27, 1000, {.forwards = false});
+	chassis.moveToPoint(29, 27, 1000, {.forwards = false});
+	clamp.extend();
+
+	// score 3 rings
+	intakeForward();
+	chassis.turnToPoint(24, 59, 1000);
+	chassis.moveToPoint(24, 59, 2000, {.maxSpeed = 100});
+
+	// go to corner rings with motion chaining
+	chassis.turnToPoint(51, 58, 1000);
+	chassis.moveToPoint(51, 58, 1000, {.minSpeed = 127, .earlyExitRange = 6});
+	chassis.moveToPoint(67, 65, 2000);
+
+	// go back and forward for second corner ring
+	chassis.moveToPoint(49, 53, 1000, {.forwards = false});
+	chassis.moveToPoint(67, 67, 1000);
+	chassis.moveToPoint(49, 53, 1000, {.forwards = false});
+	 
+	chassis.turnToPoint(47, 7, 1000);
+	chassis.moveToPoint(47, 7, 1000);
 }
