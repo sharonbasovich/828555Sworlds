@@ -885,8 +885,9 @@ void autonomous()
 	pros::Task holdstake_task(holdPID);
 	// pros::Task sort_task(colorSort);
 	// sawp();
-	rightRingRush();
-	// MiddleMogoRED();
+	// leftRingRush();
+	// leftSawp();
+	leftTower();
 	// pros::Task antiJam_task(antiJam);
 }
 
@@ -927,7 +928,7 @@ void opcontrol()
 		int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
 		// move the robot
-		chassis.arcade(leftY, rightX); /// UNCOMMENT
+		// chassis.arcade(leftY, rightX); /// UNCOMMENT
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
