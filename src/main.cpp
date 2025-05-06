@@ -271,7 +271,7 @@ void wallPID()
 	double load = 167;
 	double score = 35;
 
-	const double tkP = 1.2; //
+	const double tkP = 1.6; //
 	const double tkI = 0;	// 00004;//lower the more perscise
 	const double tkD = 0.5; // 4larger the stronger the the kD is so response is quicker
 	const double kCos = 8.5;
@@ -335,6 +335,7 @@ void holdRing()
 			{
 				// pros::delay(100);
 				intakeMotor.move(0);
+				hold = false;
 			}
 			hasRing = true;
 		}
@@ -461,66 +462,145 @@ void initialize()
 			pros::lcd::print(2, "distance: %d", ring_distance.get());
 			pros::lcd::print(3, "proximity: %d", proximity);
 			pros::lcd::print(4, "qfront %d", intakeQ.front());
-			pros::lcd::print(5, "ringcolor: %d", ringColour); // x
+			//pros::lcd::print(5, "ringcolor: %d", ringColour); // x
+			pros::lcd::print(5, "Wall Angle: %f", lbRotation.get_angle());
 			pros::lcd::print(6, "Y: %f", chassis.getPose().y);
 			pros::delay(20);
         } });
 }
 
-void sawp()
+void rightSawp()
 {
 	chassis.setPose(58, 15, 143);
 
 	doPID = false;
 	lbMotor.move(-127);
-	pros::delay(1000);
+	pros::delay(500);
 	lbMotor.move(0);
 	chassis.moveToPoint(41, 38, 1000, {.forwards = false});
 
 	// go to mogo
-	chassis.turnToPoint(18, 22, 1000, {.forwards = false});
+	chassis.turnToPoint(18, 22, 600, {.forwards = false});
 	chassis.moveToPoint(18, 22, 2000, {.forwards = false, .maxSpeed = 50});
 	pros::delay(200);
 	lbMotor.move(127);
-	pros::delay(1500);
+	pros::delay(1000);
 	clamp.extend();
 	pros::delay(300);
 	lbRotation.set_position(20000);
 	doPID = true;
 
 	// get ring 1
-	chassis.turnToPoint(16, 50, 1000);
-	pros::delay(1000);
+	chassis.turnToPoint(16, 45, 600);
+	// pros::delay(1000);
 	intakeForward();
-	chassis.moveToPoint(16, 50, 1000);
+	chassis.moveToPoint(16, 45, 1000);
 
 	// go corner
-	chassis.turnToPoint(65, 78, 1000);
+	chassis.turnToPoint(65, 78, 500);
 	chassis.moveToPoint(65, 78, 2000);
 
 	// drive back then forward then back to get the second ring
-	chassis.moveToPoint(34, 60, 1000, {.forwards = false});
-	chassis.moveToPoint(60, 70, 1000);
+	// chassis.moveToPoint(34, 60, 1000, {.forwards = false});
+	// chassis.moveToPoint(60, 70, 1000);
 	chassis.moveToPoint(34, 60, 1000, {.forwards = false});
 
 	// drive to m2r1 and filter first ring
-	chassis.turnToPoint(47, 5, 1000);
-	chassis.moveToPoint(47, 5, 1000);
-	chassis.moveToPoint(48, 5, 2000, {.maxSpeed = 80});
-
+	chassis.turnToPoint(44, 10, 500);
+	pros::delay(200);
+	intakeStop();
+	pros::delay(200);
+	clamp.retract();
+	chassis.moveToPoint(44, 10, 800);
+	pros::delay(200);
+	intakeForward();
+	hold = true;
+	lift.extend();
+	chassis.moveToPoint(44, 2, 1000, {.maxSpeed = 80});
+	// pros::delay(500);
+	// lift.retract();
 	// clamp m2
-	chassis.turnToPoint(17, -27, 1000, {.forwards = false});
-	chassis.moveToPoint(17, -27, 2000, {.forwards = false, .maxSpeed = 50});
-
+	chassis.turnToPoint(17, -24, 500, {.forwards = false});
+	chassis.moveToPoint(17, -24, 1000, {.forwards = false, .maxSpeed = 50});
+	pros::delay(1200);
+	clamp.extend();
+	pros::delay(200);
+	intakeForward();
 	// go to bar
-	chassis.moveToPoint(24, 0, 2000, {.maxSpeed = 80});
+	chassis.moveToPoint(20, 0, 2000, {.maxSpeed = 80});
+	// pros::delay(800);
+	// // state==2;
 	pros::delay(10000);
 }
 
-void MiddleMogoRED()
+void leftSawp()
+{
+	chassis.setPose(58, -15, 37);
+
+	doPID = false;
+	lbMotor.move(-127);
+	pros::delay(500);
+	lbMotor.move(0);
+	chassis.moveToPoint(41, -38, 1000, {.forwards = false});
+
+	// go to mogo
+	chassis.turnToPoint(18, -22, 600, {.forwards = false});
+	chassis.moveToPoint(18, -22, 2000, {.forwards = false, .maxSpeed = 50});
+	pros::delay(200);
+	lbMotor.move(127);
+	pros::delay(1000);
+	clamp.extend();
+	pros::delay(300);
+	lbRotation.set_position(20000);
+	doPID = true;
+
+	// get ring 1
+	chassis.turnToPoint(16, -45, 600);
+	// pros::delay(1000);
+	intakeForward();
+	chassis.moveToPoint(16, -45, 1000);
+
+	// go corner
+	chassis.turnToPoint(65, -78, 500);
+	chassis.moveToPoint(65, -78, 2000);
+
+	// drive back then forward then back to get the second ring
+	// chassis.moveToPoint(34, 60, 1000, {.forwards = false});
+	// chassis.moveToPoint(60, 70, 1000);
+	chassis.moveToPoint(34, -60, 1000, {.forwards = false});
+
+	// drive to m2r1 and filter first ring
+	chassis.turnToPoint(44, -10, 500);
+	pros::delay(200);
+	intakeStop();
+	pros::delay(200);
+	clamp.retract();
+	chassis.moveToPoint(44, -10, 800);
+	pros::delay(200);
+	intakeForward();
+	hold = true;
+	lift.extend();
+	chassis.moveToPoint(44, -2, 1000, {.maxSpeed = 80});
+	// pros::delay(500);
+	// lift.retract();
+	// clamp m2
+	chassis.turnToPoint(17, 24, 500, {.forwards = false});
+	chassis.moveToPoint(17, 24, 1000, {.forwards = false, .maxSpeed = 50});
+	pros::delay(1200);
+	clamp.extend();
+	pros::delay(200);
+	intakeForward();
+	// go to bar
+	chassis.moveToPoint(20, 0, 2000, {.maxSpeed = 80});
+	// pros::delay(800);
+	// // state==2;
+	pros::delay(10000);
+}
+
+void rightTower()
 {
 	// === Set Start Position ===
-	chassis.setPose(-56., -24, 270);
+	chassis.setPose(-56, -24, 270);
 
 	// === Move to Mobile Goal 1 and Clamp ===
 	chassis.moveToPoint(-23, -24, 1000, {.forwards = false, .maxSpeed = 80});
@@ -588,14 +668,227 @@ void MiddleMogoRED()
 	clamp.retract();
 	chassis.moveToPoint(-16.15, -56, 2000);
 }
+
+void leftTower()
+{
+	// === Set Start Position ===
+	chassis.setPose(-56, 24, 270);
+
+	// === Move to Mobile Goal 1 and Clamp ===
+	chassis.moveToPoint(-23, 24, 1000, {.forwards = false, .maxSpeed = 80});
+	pros::delay(800);
+	clamp.extend();
+	pros::delay(50);
+	intakeForward();
+	pros::delay(250);
+
+	// === Turn to Face Center and Move to Middle ===
+	chassis.turnToHeading(140, 250);
+	pros::delay(250);
+	intakeStop();
+	// chassis.moveToPoint(-13, -6, 1250, {.maxSpeed = 40});//-9.5, -11
+	chassis.moveToPoint(-15, 10, 1000, {.maxSpeed = 40}); //-9.5, -11
+
+	// pros::delay(1000);
+	chassis.turnToHeading(110, 500, {.maxSpeed = 90}); // 400
+	// pros::delay(400);
+	chassis.moveToPoint(-12, 5, 750, {.maxSpeed = 40}); // 750
+	pros::delay(650);
+	rDoinker.extend();
+
+	// === Go to Second Ring in Middle and Clamp ===
+
+	pros::delay(400);
+	chassis.turnToHeading(128, 700); // 500
+	pros::delay(500);
+	lDoinker.extend();
+	// pros::delay(100);
+	// === Move Back and Align Rings ===
+	chassis.moveToPoint(-44, 36, 1300, {.forwards = false});
+	chassis.turnToHeading(90, 500);
+	pros::delay(500);
+	lDoinker.retract();
+	rDoinker.retract();
+	pros::delay(300);
+	// === Move to First Ring and Score on Mogo ===
+	intakeForward();
+	chassis.moveToPoint(-37, 6, 1000, {.forwards = false}); // drive back
+	pros::delay(1000);
+	// 2. Drive to (-25, -21), exit early so the next turn can start sooner
+	chassis.turnToPoint(-25, 23, 350);
+	pros::delay(350);
+	chassis.moveToPoint(-29, 23, 1250, {.earlyExitRange = 3});
+
+	// === Score Final 2 Rings ==
+
+	// 4. Drive to final position (-23, -55), again with early exit to prevent stall
+	chassis.moveToPoint(-23, 51, 2200, {.maxSpeed = 30, .earlyExitRange = 3});
+
+	// === Move to Corner ===
+	chassis.moveToPoint(-37, 44, 500, {.forwards = false});
+
+	chassis.moveToPoint(-77, 77, 2000, {.minSpeed = 127});
+	pros::delay(1500);
+	chassis.moveToPoint(-50, 52, 1000, {.forwards = false});
+	pros::delay(1000);
+	chassis.moveToPoint(-59, 61, 1000);
+	pros::delay(1000);
+	chassis.moveToPoint(-50, 54, 1000, {.forwards = false});
+	pros::delay(1000);
+
+	// === Leave Corner ===
+	clamp.retract();
+	chassis.moveToPoint(-16.15, 56, 2000);
+}
+
+void rightRingRush()
+{
+	// this is for blue side, which is when you are on the right side negative corner
+	chassis.setPose(54, 17, 295);
+	intakeForward();
+	hold = true;
+	rDoinker.extend();
+	// rush to ring cluster
+	chassis.moveToPoint(15, 38, 1500, {.minSpeed = 127});
+
+	// pull rings backward - one in intake one on doinker
+	chassis.moveToPoint(38, 32, 1100, {.forwards = false});
+	pros::delay(900);
+	rDoinker.retract();
+	pros::delay(200);
+	// turn to, go to, and clamp mogo
+	chassis.turnToPoint(20, 21, 500, {.forwards = false});
+	chassis.moveToPoint(20, 21, 1000, {.forwards = false, .maxSpeed = 80});
+	pros::delay(800);
+	clamp.extend();
+
+	// score 3 rings
+	intakeForward();
+	chassis.turnToPoint(31, 53, 500);
+	chassis.moveToPoint(31, 53, 2000, {.maxSpeed = 40});
+
+	// go to corner rings with motion chaining
+	chassis.turnToPoint(41, 53, 500);
+	chassis.moveToPoint(41, 53, 500, {.minSpeed = 127, .earlyExitRange = 10});
+	chassis.moveToPoint(74, 61, 1800, {.minSpeed = 127});
+
+	// go back and forward for second corner ring
+	// chassis.moveToPoint(50, 50, 1000, {.forwards = false});
+	// chassis.moveToPoint(65, 65, 1000);
+	chassis.moveToPoint(50, 40, 1000, {.forwards = false});
+
+	// chassis.turnToPoint(47, 7, 1000);
+	chassis.turnToPoint(47, -4, 700);
+	chassis.moveToPoint(47, 25, 500);
+	pros::delay(1500);
+	chassis.moveToPoint(48, -1, 2000, {.maxSpeed = 35});
+	pros::delay(100);
+	intakeForward();
+	lift.extend();
+	state++;
+	pros::delay(400);
+	lift.retract();
+	pros::delay(200);
+	intakeForward();
+
+	// chassis.turnToPoint(49, -4, 600);
+	chassis.turnToHeading(98, 400);
+	intakeForward();
+
+	chassis.moveToPoint(51, -3, 500);
+	intakeForward();
+
+	doPID = false;
+	intakeForward();
+
+	pros::delay(100);
+	intakeMotor.move(-50);
+	pros::delay(150);
+	intakeMotor.move(0);
+	pros::delay(10);
+	lbMotor.move(-127);
+	pros::delay(10000);
+}
+
+void leftRingRush()
+{
+	// this is for blue side, which is when you are on the right side negative corner
+	chassis.setPose(54, -17, 245);
+	intakeForward();
+	hold = true;
+	lDoinker.extend();
+	// rush to ring cluster
+	chassis.moveToPoint(15, -38, 1500, {.minSpeed = 127});
+
+	// pull rings backward - one in intake one on doinker
+	chassis.moveToPoint(38, -32, 1100, {.forwards = false});
+	pros::delay(900);
+	lDoinker.retract();
+	pros::delay(200);
+	// turn to, go to, and clamp mogo
+	chassis.turnToPoint(20, -21, 500, {.forwards = false});
+	chassis.moveToPoint(20, -21, 1000, {.forwards = false, .maxSpeed = 80});
+	pros::delay(800);
+	clamp.extend();
+
+	// score 3 rings
+	intakeForward();
+	chassis.turnToPoint(31, -53, 500);
+	chassis.moveToPoint(31, -53, 2000, {.maxSpeed = 40});
+
+	// go to corner rings with motion chaining
+	chassis.turnToPoint(41, -53, 500);
+	chassis.moveToPoint(41, -53, 500, {.minSpeed = 127, .earlyExitRange = 10});
+	chassis.moveToPoint(74, -61, 1800, {.minSpeed = 127});
+
+	// go back and forward for second corner ring
+	// chassis.moveToPoint(50, 50, 1000, {.forwards = false});
+	// chassis.moveToPoint(65, 65, 1000);
+	chassis.moveToPoint(50, -40, 1000, {.forwards = false});
+
+	// chassis.turnToPoint(47, 7, 1000);
+	chassis.turnToPoint(47, 4, 700);
+	chassis.moveToPoint(47, -25, 500);
+	pros::delay(1500);
+	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
+	pros::delay(100);
+	intakeForward();
+	lift.extend();
+	state++;
+	pros::delay(400);
+	lift.retract();
+	pros::delay(200);
+	intakeForward();
+
+	// chassis.turnToPoint(49, -4, 600);
+	chassis.turnToHeading(82, 400);
+	intakeForward();
+
+	chassis.moveToPoint(51, 3, 500);
+	intakeForward();
+
+	doPID = false;
+	intakeForward();
+
+	pros::delay(100);
+	intakeMotor.move(-50);
+	pros::delay(150);
+	intakeMotor.move(0);
+	pros::delay(10);
+	lbMotor.move(-127);
+	pros::delay(10000);
+}
+
 void autonomous()
 {
 	pros::Task ringhold_task(holdRing);
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
-	pros::Task sort_task(colorSort);
-	sawp();
-	// MiddleMogoRED();
+	// pros::Task sort_task(colorSort);
+	// sawp();
+	// leftRingRush();
+	// leftSawp();
+	leftTower();
 	// pros::Task antiJam_task(antiJam);
 }
 
@@ -615,12 +908,19 @@ void autonomous()
 
 void opcontrol()
 {
+	pros::Task ringhold_task(holdRing);
+
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
+
 	// pros::Task antiJam_task(antiJam);
 	// pros::Task sort_task(colorSort);
-	sort = true;
+	// sort = true;
+	doPID = true;
 	// loop forever
+
+	
+
 	while (true)
 	{
 
@@ -633,12 +933,8 @@ void opcontrol()
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
-			sort = false;
-		}
-
-		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
-		{
-			jam = !jam;
+			// sort = false;
+			hold = !hold;
 		}
 
 		// extend clamp on press
@@ -807,41 +1103,4 @@ void opcontrol()
 		// delay to save resources
 		pros::delay(10);
 	}
-}
-
-void blueRingRush()
-{
-	// this is for blue side, which is when you are on the right side negative corner
-	chassis.setPose(50, 25, 290);
-	intakeForward();
-	hold = true;
-	rDoinker.extend();
-	// rush to ring cluster
-	chassis.moveToPoint(15, 40, 1500, {.minSpeed = 127});
-	rDoinker.retract();
-	// pull rings backward - one in intake one on doinker
-	chassis.moveToPoint(39, 34, 1000, {.forwards = false});
-
-	// turn to, go to, and clamp mogo
-	chassis.turnToPoint(29, 27, 1000, {.forwards = false});
-	chassis.moveToPoint(29, 27, 1000, {.forwards = false});
-	clamp.extend();
-
-	// score 3 rings
-	intakeForward();
-	chassis.turnToPoint(24, 59, 1000);
-	chassis.moveToPoint(24, 59, 2000, {.maxSpeed = 100});
-
-	// go to corner rings with motion chaining
-	chassis.turnToPoint(51, 58, 1000);
-	chassis.moveToPoint(51, 58, 1000, {.minSpeed = 127, .earlyExitRange = 6});
-	chassis.moveToPoint(67, 65, 2000);
-
-	// go back and forward for second corner ring
-	chassis.moveToPoint(49, 53, 1000, {.forwards = false});
-	chassis.moveToPoint(67, 67, 1000);
-	chassis.moveToPoint(49, 53, 1000, {.forwards = false});
-
-	chassis.turnToPoint(47, 7, 1000);
-	chassis.moveToPoint(47, 7, 1000);
 }
