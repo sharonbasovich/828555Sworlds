@@ -651,21 +651,20 @@ void rightTower()
 
 	// 4. Drive to final position (-23, -55), again with early exit to prevent stall
 	chassis.moveToPoint(-23, -51, 2200, {.maxSpeed = 30, .earlyExitRange = 3});
-
-	// === Move to Corner ===
-	chassis.moveToPoint(-37, -44, 500, {.forwards = false});
-
-	chassis.moveToPoint(-77, -77, 2000, {.minSpeed = 127});
-	pros::delay(1500);
-	chassis.moveToPoint(-50, -52, 1000, {.forwards = false});
 	pros::delay(1000);
+	// // === Move to Corner ===
+	// chassis.moveToPoint(-37, -44, 500, {.forwards = false});
 
-	chassis.turnToPoint(-24, -1, 500);
+	// chassis.moveToPoint(-77, -77, 2000, {.minSpeed = 127});
+	// pros::delay(1500);
+	// chassis.moveToPoint(-50, -52, 1000, {.forwards = false});
+	// pros::delay(1000);
+
+	chassis.turnToPoint(-24, 12, 800);
 	state += 2;
 	pros::delay(500);
-	chassis.moveToPoint(-24, -1, 5000, {.maxSpeed = 40});
+	chassis.moveToPoint(-24, 12, 5000, {.maxSpeed = 40});
 	pros::delay(10000);
-	
 
 	// chassis.moveToPoint(-59, -61, 1000);
 	// pros::delay(1000);
@@ -731,18 +730,18 @@ void leftTower()
 
 	// 4. Drive to final position (-23, -55), again with early exit to prevent stall
 	chassis.moveToPoint(-23, 51, 2200, {.maxSpeed = 30, .earlyExitRange = 3});
-
-	// === Move to Corner ===
-	chassis.moveToPoint(-37, 44, 500, {.forwards = false});
-
-	chassis.moveToPoint(-77, 77, 2000, {.minSpeed = 127});
-	pros::delay(1500);
-	chassis.moveToPoint(-50, 52, 1000, {.forwards = false});
 	pros::delay(1000);
-	chassis.turnToPoint(24,1, 500);
+	// === Move to Corner ===
+	// chassis.moveToPoint(-37, 44, 500, {.forwards = false});
+
+	// chassis.moveToPoint(-77, 77, 2000, {.minSpeed = 127});
+	// pros::delay(1500);
+	// chassis.moveToPoint(-50, 52, 1000, {.forwards = false});
+	// pros::delay(1000);
+	chassis.turnToPoint(-24, -12, 800);
 	state += 2;
 	pros::delay(500);
-	chassis.moveToPoint(24,1, 5000);
+	chassis.moveToPoint(-24, -12, 5000, {.maxSpeed = 40});
 	pros::delay(10000);
 	// pros::delay(1000);
 	// chassis.moveToPoint(-59, 61, 1000);
@@ -799,7 +798,6 @@ void rightRingRush()
 	chassis.moveToPoint(21, 7, 10000, {.maxSpeed = 60});
 	pros::delay(10000);
 
-	
 	// chassis.moveToPoint(48, -1, 2000, {.maxSpeed = 35});
 	// pros::delay(100);
 	// intakeForward();
@@ -827,7 +825,6 @@ void rightRingRush()
 	// pros::delay(10);
 	// lbMotor.move(-127);
 	// pros::delay(10000);
-
 }
 
 void leftRingRush()
@@ -875,47 +872,48 @@ void leftRingRush()
 
 	pros::delay(10000);
 
-// 	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
-// 	pros::delay(100);
-// 	intakeForward();
-// 	lift.extend();
-// 	state++;
-// 	pros::delay(400);
-// 	lift.retract();
-// 	pros::delay(200);
-// 	intakeForward();
+	// 	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
+	// 	pros::delay(100);
+	// 	intakeForward();
+	// 	lift.extend();
+	// 	state++;
+	// 	pros::delay(400);
+	// 	lift.retract();
+	// 	pros::delay(200);
+	// 	intakeForward();
 
-// 	// chassis.turnToPoint(49, -4, 600);
-// 	chassis.turnToHeading(82, 400);
-// 	intakeForward();
+	// 	// chassis.turnToPoint(49, -4, 600);
+	// 	chassis.turnToHeading(82, 400);
+	// 	intakeForward();
 
-// 	chassis.moveToPoint(51, 3, 500);
-// 	intakeForward();
+	// 	chassis.moveToPoint(51, 3, 500);
+	// 	intakeForward();
 
-// 	doPID = false;
-// 	intakeForward();
+	// 	doPID = false;
+	// 	intakeForward();
 
-// 	pros::delay(100);
-// 	intakeMotor.move(-50);
-// 	pros::delay(150);
-// 	intakeMotor.move(0);
-// 	pros::delay(10);
-// 	lbMotor.move(-127);
-// 	pros::delay(10000);
+	// 	pros::delay(100);
+	// 	intakeMotor.move(-50);
+	// 	pros::delay(150);
+	// 	intakeMotor.move(0);
+	// 	pros::delay(10);
+	// 	lbMotor.move(-127);
+	// 	pros::delay(10000);
 }
 
-void autonomous(){
+void autonomous()
+{
 	pros::Task ringhold_task(holdRing);
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
-	//rightSawp();
-	//rightRingRush();
+	// rightSawp();
+	// rightRingRush();
 	rightTower();
 	// pros::Task sort_task(colorSort);
 	// sawp();
 	// leftRingRush();
 	// leftSawp();
-	//leftTower();
+	// leftTower();
 	// pros::Task antiJam_task(antiJam);
 }
 
@@ -947,8 +945,6 @@ void opcontrol()
 	doPID = true;
 	// loop forever
 
-	
-
 	while (true)
 	{
 
@@ -958,7 +954,7 @@ void opcontrol()
 
 		// move the robot
 		chassis.arcade(leftY, rightX); /// UNCOMMENT
-		
+
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
 			// sort = false;
