@@ -659,14 +659,22 @@ void rightTower()
 	pros::delay(1500);
 	chassis.moveToPoint(-50, -52, 1000, {.forwards = false});
 	pros::delay(1000);
-	chassis.moveToPoint(-59, -61, 1000);
-	pros::delay(1000);
-	chassis.moveToPoint(-50, -54, 1000, {.forwards = false});
-	pros::delay(1000);
+
+	chassis.turnToPoint(-24, -1, 500);
+	state += 2;
+	pros::delay(500);
+	chassis.moveToPoint(-24, -1, 5000, {.maxSpeed = 40});
+	pros::delay(10000);
+	
+
+	// chassis.moveToPoint(-59, -61, 1000);
+	// pros::delay(1000);
+	// chassis.moveToPoint(-50, -54, 1000, {.forwards = false});
+	// pros::delay(1000);
 
 	// === Leave Corner ===
-	clamp.retract();
-	chassis.moveToPoint(-16.15, -56, 2000);
+	// clamp.retract();
+	// chassis.moveToPoint(-16.15, -56, 2000);
 }
 
 void leftTower()
@@ -731,14 +739,20 @@ void leftTower()
 	pros::delay(1500);
 	chassis.moveToPoint(-50, 52, 1000, {.forwards = false});
 	pros::delay(1000);
-	chassis.moveToPoint(-59, 61, 1000);
-	pros::delay(1000);
-	chassis.moveToPoint(-50, 54, 1000, {.forwards = false});
-	pros::delay(1000);
+	chassis.turnToPoint(24,1, 500);
+	state += 2;
+	pros::delay(500);
+	chassis.moveToPoint(24,1, 5000);
+	pros::delay(10000);
+	// pros::delay(1000);
+	// chassis.moveToPoint(-59, 61, 1000);
+	// pros::delay(1000);
+	// chassis.moveToPoint(-50, 54, 1000, {.forwards = false});
+	// pros::delay(1000);
 
-	// === Leave Corner ===
-	clamp.retract();
-	chassis.moveToPoint(-16.15, 56, 2000);
+	// // === Leave Corner ===
+	// clamp.retract();
+	// chassis.moveToPoint(-16.15, 56, 2000);
 }
 
 void rightRingRush()
@@ -781,33 +795,39 @@ void rightRingRush()
 	chassis.turnToPoint(47, -4, 700);
 	chassis.moveToPoint(47, 25, 500);
 	pros::delay(1500);
-	chassis.moveToPoint(48, -1, 2000, {.maxSpeed = 35});
-	pros::delay(100);
-	intakeForward();
-	lift.extend();
-	state++;
-	pros::delay(400);
-	lift.retract();
-	pros::delay(200);
-	intakeForward();
-
-	// chassis.turnToPoint(49, -4, 600);
-	chassis.turnToHeading(98, 400);
-	intakeForward();
-
-	chassis.moveToPoint(51, -3, 500);
-	intakeForward();
-
-	doPID = false;
-	intakeForward();
-
-	pros::delay(100);
-	intakeMotor.move(-50);
-	pros::delay(150);
-	intakeMotor.move(0);
-	pros::delay(10);
-	lbMotor.move(-127);
+	state += 2;
+	chassis.moveToPoint(21, 7, 10000, {.maxSpeed = 60});
 	pros::delay(10000);
+
+	
+	// chassis.moveToPoint(48, -1, 2000, {.maxSpeed = 35});
+	// pros::delay(100);
+	// intakeForward();
+	// lift.extend();
+	// state++;
+	// pros::delay(400);
+	// lift.retract();
+	// pros::delay(200);
+	// intakeForward();
+
+	// // chassis.turnToPoint(49, -4, 600);
+	// chassis.turnToHeading(98, 400);
+	// intakeForward();
+
+	// chassis.moveToPoint(51, -3, 500);
+	// intakeForward();
+
+	// doPID = false;
+	// intakeForward();
+
+	// pros::delay(100);
+	// intakeMotor.move(-50);
+	// pros::delay(150);
+	// intakeMotor.move(0);
+	// pros::delay(10);
+	// lbMotor.move(-127);
+	// pros::delay(10000);
+
 }
 
 void leftRingRush()
@@ -850,45 +870,52 @@ void leftRingRush()
 	chassis.turnToPoint(47, 4, 700);
 	chassis.moveToPoint(47, -25, 500);
 	pros::delay(1500);
-	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
-	pros::delay(100);
-	intakeForward();
-	lift.extend();
-	state++;
-	pros::delay(400);
-	lift.retract();
-	pros::delay(200);
-	intakeForward();
+	state += 2;
+	chassis.moveToPoint(21, -7, 10000, {.maxSpeed = 60});
 
-	// chassis.turnToPoint(49, -4, 600);
-	chassis.turnToHeading(82, 400);
-	intakeForward();
-
-	chassis.moveToPoint(51, 3, 500);
-	intakeForward();
-
-	doPID = false;
-	intakeForward();
-
-	pros::delay(100);
-	intakeMotor.move(-50);
-	pros::delay(150);
-	intakeMotor.move(0);
-	pros::delay(10);
-	lbMotor.move(-127);
 	pros::delay(10000);
+
+// 	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
+// 	pros::delay(100);
+// 	intakeForward();
+// 	lift.extend();
+// 	state++;
+// 	pros::delay(400);
+// 	lift.retract();
+// 	pros::delay(200);
+// 	intakeForward();
+
+// 	// chassis.turnToPoint(49, -4, 600);
+// 	chassis.turnToHeading(82, 400);
+// 	intakeForward();
+
+// 	chassis.moveToPoint(51, 3, 500);
+// 	intakeForward();
+
+// 	doPID = false;
+// 	intakeForward();
+
+// 	pros::delay(100);
+// 	intakeMotor.move(-50);
+// 	pros::delay(150);
+// 	intakeMotor.move(0);
+// 	pros::delay(10);
+// 	lbMotor.move(-127);
+// 	pros::delay(10000);
 }
 
-void autonomous()
-{
+void autonomous(){
 	pros::Task ringhold_task(holdRing);
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
+	//rightSawp();
+	//rightRingRush();
+	rightTower();
 	// pros::Task sort_task(colorSort);
 	// sawp();
 	// leftRingRush();
 	// leftSawp();
-	leftTower();
+	//leftTower();
 	// pros::Task antiJam_task(antiJam);
 }
 
@@ -908,6 +935,7 @@ void autonomous()
 
 void opcontrol()
 {
+
 	pros::Task ringhold_task(holdRing);
 
 	pros::Task wallstake_task(wallPID);
@@ -930,7 +958,7 @@ void opcontrol()
 
 		// move the robot
 		chassis.arcade(leftY, rightX); /// UNCOMMENT
-
+		
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
 			// sort = false;
@@ -952,15 +980,14 @@ void opcontrol()
 		// right doinker
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y))
 		{
-			lDoinker.toggle();
+			rDoinker.toggle();
 		}
 
 		// left doinker
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT))
 		{
-			rDoinker.toggle();
+			lDoinker.toggle();
 		}
-
 		// when a is pressed, toggle between intaking and stopping the intake
 		// overrides outtaking when pressed
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A))
