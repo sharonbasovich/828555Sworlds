@@ -268,7 +268,7 @@ void wallPID()
 {
 
 	double bottom = 200;
-	double load = 167;
+	double load = 170;
 	double score = 35;
 
 	const double tkP = 1.6; //
@@ -390,19 +390,27 @@ void colorSort()
 
 			if (ringColour != previousColour && ringColour != 0)
 			{
-				if (ringColour == 1 && isRed)
+				if (ringColour == 1 && (!isRed))
 				{
-					pros::delay(160);
+					// pros::delay(20);
+					pros::delay(115);
 					intakeStop();
-					pros::delay(400);
+					pros::delay(100);
+					// intakeForward();
+					intakeBackward();
+					pros::delay(200);
 					intakeForward();
 				}
 
-				if (ringColour == 1 && (!isRed))
+				if (ringColour == 2 && (isRed))
 				{
-					pros::delay(160);
+					// pros::delay(20);
+					pros::delay(115);
 					intakeStop();
-					pros::delay(400);
+					pros::delay(100);
+					// intakeForward();
+					intakeBackward();
+					pros::delay(200);
 					intakeForward();
 				}
 
@@ -438,9 +446,9 @@ void colorSort()
  */
 void initialize()
 {
-	pros::lcd::initialize();
 	lbRotation.set_position(20000);
 	pros::delay(10);
+	pros::lcd::initialize();
 	ring_color.set_integration_time(10);
 	pros::delay(10);
 	ring_color.disable_gesture();
@@ -528,6 +536,100 @@ void rightSawp()
 	intakeForward();
 	// go to bar
 	chassis.moveToPoint(20, 0, 2000, {.maxSpeed = 80});
+	// pros::delay(800);
+	// // state==2;
+	pros::delay(10000);
+}
+
+void rightMidSawp()
+{
+	chassis.setPose(58, 15, 143);
+
+	doPID = false;
+	lbMotor.move(-127);
+	pros::delay(500);
+	lbMotor.move(0);
+	chassis.moveToPoint(41, 38, 1000, {.forwards = false});
+
+	// go to mogo
+	chassis.turnToPoint(18, 22, 600, {.forwards = false});
+	chassis.moveToPoint(18, 22, 2000, {.forwards = false, .maxSpeed = 50});
+	pros::delay(200);
+	lbMotor.move(127);
+	pros::delay(1000);
+	clamp.extend();
+	pros::delay(300);
+	lbRotation.set_position(20000);
+	doPID = true;
+
+	// get ring 1
+	chassis.turnToPoint(16, 45, 600);
+	// pros::delay(1000);
+	intakeForward();
+	chassis.moveToPoint(16, 45, 1000);
+	pros::delay(3000);
+	// go corner
+	chassis.turnToPoint(65, 78, 500);
+	chassis.moveToPoint(65, 78, 2000);
+
+	// drive back then forward then back to get the second ring
+	chassis.moveToPoint(34, 60, 1000, {.forwards = false});
+	// chassis.moveToPoint(60, 70, 1000);
+	// chassis.moveToPoint(34, 60, 1000, {.forwards = false});
+	// pros::delay(1500);
+	chassis.turnToPoint(19, -6, 800);
+	state += 2;
+	pros::delay(500);
+	// go to bar
+	chassis.moveToPoint(19, -6, 5000, {.maxSpeed = 40});
+	// pros::delay(800);
+	// // state==2;
+	pros::delay(10000);
+}
+
+void rightAvoidRing()
+{
+	chassis.setPose(58, 15, 143);
+
+	doPID = false;
+	lbMotor.move(-127);
+	pros::delay(500);
+	lbMotor.move(0);
+	chassis.moveToPoint(41, 38, 1000, {.forwards = false});
+
+	// go to mogo
+	chassis.turnToPoint(18, 22, 600, {.forwards = false});
+	chassis.moveToPoint(18, 22, 2000, {.forwards = false, .maxSpeed = 50});
+	pros::delay(200);
+	lbMotor.move(127);
+	pros::delay(1000);
+	clamp.extend();
+	pros::delay(300);
+	lbRotation.set_position(20000);
+	doPID = true;
+
+	// get ring 1
+	chassis.turnToPoint(16, 45, 600);
+	// pros::delay(1000);
+	intakeForward();
+	chassis.moveToPoint(16, 45, 1000);
+	pros::delay(1200);
+	// go corner
+	chassis.turnToPoint(42, 46, 500);
+	chassis.moveToPoint(42, 46, 1000);
+	chassis.turnToPoint(65, 78, 500);
+	chassis.moveToPoint(65, 78, 3500, {.minSpeed = 127});
+
+	// drive back then forward then back to get the second ring
+	chassis.moveToPoint(34, 60, 1000, {.forwards = false, .maxSpeed = 60});
+	// chassis.moveToPoint(60, 70, 1000);
+	// chassis.moveToPoint(34, 60, 1000, {.forwards = false});
+	// pros::delay(1500);
+	chassis.turnToPoint(19, -6, 800);
+	state += 2;
+	pros::delay(500);
+	// go to bar
+	chassis.moveToPoint(19, -6, 5000, {.maxSpeed = 50});
 	// pros::delay(800);
 	// // state==2;
 	pros::delay(10000);
@@ -663,7 +765,7 @@ void rightTower()
 	chassis.turnToPoint(-24, 12, 800);
 	state += 2;
 	pros::delay(500);
-	chassis.moveToPoint(-24, 12, 5000, {.maxSpeed = 40});
+	chassis.moveToPoint(-20, 12, 5000, {.maxSpeed = 40});
 	pros::delay(10000);
 
 	// chassis.moveToPoint(-59, -61, 1000);
@@ -741,7 +843,7 @@ void leftTower()
 	chassis.turnToPoint(-24, -12, 800);
 	state += 2;
 	pros::delay(500);
-	chassis.moveToPoint(-24, -12, 5000, {.maxSpeed = 40});
+	chassis.moveToPoint(-20, -12, 5000, {.maxSpeed = 40});
 	pros::delay(10000);
 	// pros::delay(1000);
 	// chassis.moveToPoint(-59, 61, 1000);
@@ -795,7 +897,7 @@ void rightRingRush()
 	chassis.moveToPoint(47, 25, 500);
 	pros::delay(1500);
 	state += 2;
-	chassis.moveToPoint(21, 7, 10000, {.maxSpeed = 60});
+	chassis.moveToPoint(15, -8, 10000, {.maxSpeed = 40});
 	pros::delay(10000);
 
 	// chassis.moveToPoint(48, -1, 2000, {.maxSpeed = 35});
@@ -835,7 +937,7 @@ void leftRingRush()
 	hold = true;
 	lDoinker.extend();
 	// rush to ring cluster
-	chassis.moveToPoint(15, -38, 1500, {.minSpeed = 127});
+	chassis.moveToPoint(11, -40, 1500, {.minSpeed = 127});
 
 	// pull rings backward - one in intake one on doinker
 	chassis.moveToPoint(38, -32, 1100, {.forwards = false});
@@ -854,51 +956,57 @@ void leftRingRush()
 	chassis.moveToPoint(31, -53, 2000, {.maxSpeed = 40});
 
 	// go to corner rings with motion chaining
-	chassis.turnToPoint(41, -53, 500);
-	chassis.moveToPoint(41, -53, 500, {.minSpeed = 127, .earlyExitRange = 10});
+	// chassis.turnToPoint(41, -40, 500);
+	chassis.moveToPoint(41, -40, 500, {.minSpeed = 127, .earlyExitRange = 4});
 	chassis.moveToPoint(74, -61, 1800, {.minSpeed = 127});
+
+
 
 	// go back and forward for second corner ring
 	// chassis.moveToPoint(50, 50, 1000, {.forwards = false});
 	// chassis.moveToPoint(65, 65, 1000);
+
+
+
 	chassis.moveToPoint(50, -40, 1000, {.forwards = false});
 
 	// chassis.turnToPoint(47, 7, 1000);
 	chassis.turnToPoint(47, 4, 700);
 	chassis.moveToPoint(47, -25, 500);
 	pros::delay(1500);
-	state += 2;
-	chassis.moveToPoint(21, -7, 10000, {.maxSpeed = 60});
+	// state += 2;
+	// chassis.moveToPoint(15, 8, 10000, {.maxSpeed = 40});
 
-	pros::delay(10000);
+	// pros::delay(10000);
 
-	// 	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
-	// 	pros::delay(100);
+	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
+	pros::delay(100);
 	// 	intakeForward();
-	// 	lift.extend();
-	// 	state++;
+	lift.extend();
+	state++;
 	// 	pros::delay(400);
 	// 	lift.retract();
 	// 	pros::delay(200);
 	// 	intakeForward();
 
-	// 	// chassis.turnToPoint(49, -4, 600);
-	// 	chassis.turnToHeading(82, 400);
+	chassis.turnToPoint(49, -4, 600);
+	lift.retract();
+	// chassis.turnToHeading(82, 400);
 	// 	intakeForward();
 
-	// 	chassis.moveToPoint(51, 3, 500);
+	chassis.moveToPoint(51, 3, 500);
 	// 	intakeForward();
 
-	// 	doPID = false;
+	doPID = false;
 	// 	intakeForward();
 
-	// 	pros::delay(100);
-	// 	intakeMotor.move(-50);
-	// 	pros::delay(150);
-	// 	intakeMotor.move(0);
-	// 	pros::delay(10);
-	// 	lbMotor.move(-127);
-	// 	pros::delay(10000);
+	pros::delay(100);
+	intakeMotor.move(-50);
+	pros::delay(150);
+	intakeMotor.move(0);
+	pros::delay(10);
+	lbMotor.move(-127);
+	pros::delay(10000);
 }
 
 void autonomous()
@@ -906,10 +1014,13 @@ void autonomous()
 	pros::Task ringhold_task(holdRing);
 	pros::Task wallstake_task(wallPID);
 	pros::Task holdstake_task(holdPID);
+	pros::Task sort_task(colorSort);
+
 	// rightSawp();
 	// rightRingRush();
-	rightTower();
-	// pros::Task sort_task(colorSort);
+	leftRingRush();
+	// rightRingRush();
+	// rightAvoidRing();
 	// sawp();
 	// leftRingRush();
 	// leftSawp();
@@ -940,7 +1051,7 @@ void opcontrol()
 	pros::Task holdstake_task(holdPID);
 
 	// pros::Task antiJam_task(antiJam);
-	// pros::Task sort_task(colorSort);
+	pros::Task sort_task(colorSort);
 	// sort = true;
 	doPID = true;
 	// loop forever
@@ -957,8 +1068,8 @@ void opcontrol()
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
-			// sort = false;
-			hold = !hold;
+			sort = false;
+			// hold = !hold;
 		}
 
 		// extend clamp on press
