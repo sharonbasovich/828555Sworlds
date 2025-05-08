@@ -951,14 +951,15 @@ void leftRingRush()
 	clamp.extend();
 
 	// score 3 rings
+	hold = false;
 	intakeForward();
 	chassis.turnToPoint(31, -53, 500);
 	chassis.moveToPoint(31, -53, 2000, {.maxSpeed = 40});
 
 	// go to corner rings with motion chaining
 	// chassis.turnToPoint(41, -40, 500);
-	chassis.moveToPoint(41, -40, 500, {.minSpeed = 127, .earlyExitRange = 4});
-	chassis.moveToPoint(74, -61, 1800, {.minSpeed = 127});
+	chassis.moveToPoint(41, -40, 300, {.minSpeed = 127, .earlyExitRange = 4});
+	chassis.moveToPoint(66, -64, 1800, {.minSpeed = 127});
 
 
 
