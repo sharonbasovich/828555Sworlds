@@ -929,6 +929,53 @@ void rightRingRush()
 	// pros::delay(10000);
 }
 
+void leftOld()
+{
+
+	// this is for blue side, which is when you are on the right side negative corner
+	chassis.setPose(54, -17, 245);
+	intakeForward();
+	hold = true;
+	lDoinker.extend();
+	// rush to ring cluster
+	chassis.moveToPoint(15, -38, 1500, {.minSpeed = 127});
+
+	// pull rings backward - one in intake one on doinker
+	chassis.moveToPoint(38, -32, 1100, {.forwards = false});
+	pros::delay(900);
+	lDoinker.retract();
+	pros::delay(200);
+	// turn to, go to, and clamp mogo
+	chassis.turnToPoint(20, -21, 500, {.forwards = false});
+	chassis.moveToPoint(20, -21, 1000, {.forwards = false, .maxSpeed = 80});
+	pros::delay(800);
+	clamp.extend();
+
+	// score 3 rings
+	intakeForward();
+	chassis.turnToPoint(31, -53, 500);
+	chassis.moveToPoint(31, -53, 2000, {.maxSpeed = 40});
+
+	// go to corner rings with motion chaining
+	chassis.turnToPoint(41, -53, 500);
+	chassis.moveToPoint(41, -53, 500, {.minSpeed = 127, .earlyExitRange = 10});
+	chassis.moveToPoint(74, -61, 1800, {.minSpeed = 127});
+
+	// go back and forward for second corner ring
+	// chassis.moveToPoint(50, 50, 1000, {.forwards = false});
+	// chassis.moveToPoint(65, 65, 1000);
+	chassis.moveToPoint(50, -40, 1000, {.forwards = false});
+
+	// chassis.turnToPoint(47, 7, 1000);
+	chassis.turnToPoint(47, 4, 700);
+	chassis.moveToPoint(47, -25, 500);
+	pros::delay(1500);
+	state += 2;
+	chassis.moveToPoint(21, -7, 10000, {.maxSpeed = 60});
+
+	pros::delay(10000);
+}
+
 void leftRingRush()
 {
 	// this is for blue side, which is when you are on the right side negative corner
@@ -937,7 +984,7 @@ void leftRingRush()
 	hold = true;
 	lDoinker.extend();
 	// rush to ring cluster
-	chassis.moveToPoint(11, -40, 1500, {.minSpeed = 127});
+	chassis.moveToPoint(15, -38, 1500, {.minSpeed = 127});
 
 	// pull rings backward - one in intake one on doinker
 	chassis.moveToPoint(38, -32, 1100, {.forwards = false});
@@ -957,57 +1004,53 @@ void leftRingRush()
 	chassis.moveToPoint(31, -53, 2000, {.maxSpeed = 40});
 
 	// go to corner rings with motion chaining
-	// chassis.turnToPoint(41, -40, 500);
-	chassis.moveToPoint(41, -40, 300, {.minSpeed = 127, .earlyExitRange = 4});
-	chassis.moveToPoint(66, -64, 1800, {.minSpeed = 127});
-
-
+	chassis.turnToPoint(41, -53, 500);
+	chassis.moveToPoint(41, -53, 500, {.minSpeed = 127, .earlyExitRange = 10});
+	chassis.moveToPoint(74, -61, 1800, {.minSpeed = 127});
 
 	// go back and forward for second corner ring
-	// chassis.moveToPoint(50, 50, 1000, {.forwards = false});
-	// chassis.moveToPoint(65, 65, 1000);
-
-
+	// chassis.moveToPoint(45, -45, 800, {.forwards = false});
+	// chassis.moveToPoint(65, -65, 1000, {.maxSpeed = 80});
 
 	chassis.moveToPoint(50, -40, 1000, {.forwards = false});
 
 	// chassis.turnToPoint(47, 7, 1000);
 	chassis.turnToPoint(47, 4, 700);
-	chassis.moveToPoint(47, -25, 500);
-	pros::delay(1500);
+	chassis.moveToPoint(47, -20, 10000);
+	pros::delay(10000);
 	// state += 2;
 	// chassis.moveToPoint(15, 8, 10000, {.maxSpeed = 40});
 
 	// pros::delay(10000);
 
-	chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
-	pros::delay(100);
+	// chassis.moveToPoint(48, 1, 2000, {.maxSpeed = 35});
+	// pros::delay(100);
 	// 	intakeForward();
-	lift.extend();
-	state++;
+	// lift.extend();
+	// state++;
 	// 	pros::delay(400);
 	// 	lift.retract();
 	// 	pros::delay(200);
 	// 	intakeForward();
 
-	chassis.turnToPoint(49, -4, 600);
-	lift.retract();
+	// chassis.turnToPoint(49, -4, 600);
+	// lift.retract();
 	// chassis.turnToHeading(82, 400);
 	// 	intakeForward();
 
-	chassis.moveToPoint(51, 3, 500);
+	// chassis.moveToPoint(51, 3, 500);
 	// 	intakeForward();
 
-	doPID = false;
+	// doPID = false;
 	// 	intakeForward();
 
-	pros::delay(100);
-	intakeMotor.move(-50);
-	pros::delay(150);
-	intakeMotor.move(0);
-	pros::delay(10);
-	lbMotor.move(-127);
-	pros::delay(10000);
+	// pros::delay(100);
+	// intakeMotor.move(-50);
+	// pros::delay(150);
+	// intakeMotor.move(0);
+	// pros::delay(10);
+	// lbMotor.move(-127);
+	// pros::delay(10000);
 }
 
 void autonomous()

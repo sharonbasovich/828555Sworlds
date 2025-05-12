@@ -6,13 +6,13 @@
 
 void intakeForward()
 {
-    intakeMotor.move(127*0.8);
+    intakeMotor.move(127*0.9);
     pros::delay(10);
 }
 
 void intakeBackward()
 {
-    intakeMotor.move(-127*0.8);
+    intakeMotor.move(-127*0.9);
     pros::delay(10);
 }
 
