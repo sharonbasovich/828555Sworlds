@@ -14,8 +14,8 @@ This is our code for worlds, containing both TeleOp code and autonomous routes.
 - Wall Stake PID: Rotational sensor on wall stake mechanism shaft ensures consistent loading and scoring angles
 - Autonomous Sensing: One vertical 2" omni wheel odometry pod and an IMU
 
-## Demo
-
+## Video
+[![The Video](https://img.youtube.com/vi/Yeccg9O32Jk/0.jpg)](https://www.youtube.com/watch?v=Yeccg9O32Jk)
 
 ## Setup
 ### NOTE 1: This code will not work on robots that are very different. Make sure your robot is compatible. (same type of drivetrain, intake, etc.)
