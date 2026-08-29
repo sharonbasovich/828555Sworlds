@@ -7,6 +7,8 @@ ring sorting, autonomous route sequencing, and experimental Monte Carlo Localiza
 
 ![Team 82855S robot](robot.jpg)
 
+## Check out the Demo!
+
 [![Watch the competition video](https://img.youtube.com/vi/Yeccg9O32Jk/0.jpg)](https://www.youtube.com/watch?v=Yeccg9O32Jk)
 
 ## Engineering highlights
