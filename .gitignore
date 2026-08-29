@@ -15,3 +15,8 @@ temp.log
 temp.errors
 *.ini
 .d/
+
+# Host-side MCL experiment
+build/
+cmake-build-*/
+mcl_trace.csv

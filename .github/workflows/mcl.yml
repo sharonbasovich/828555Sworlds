@@ -1,0 +1,41 @@
+name: Robot and MCL validation
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  production-syntax:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compile production translation units with host compiler
+        run: >-
+          g++ -std=gnu++20 -Wall -Wextra -Wpedantic -fsyntax-only
+          -Iinclude -iquote include
+          -D_POSIX_THREADS -D_UNIX98_THREAD_MUTEX_ATTRIBUTES
+          -D_POSIX_TIMERS -D_POSIX_MONOTONIC_CLOCK
+          -D_PROS_INCLUDE_LIBLVGL_LLEMU_H -D_PROS_INCLUDE_LIBLVGL_LLEMU_HPP
+          src/main.cpp src/intake.cpp
+
+  mcl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure host build
+        run: cmake -S experiments/monte_carlo_localization -B build/mcl
+
+      - name: Build experiment and tests
+        run: cmake --build build/mcl --parallel
+
+      - name: Run deterministic tests
+        run: ctest --test-dir build/mcl --output-on-failure
+
+      - name: Run synthetic demo
+        run: ./build/mcl/mcl_demo --output build/mcl/mcl_trace.csv

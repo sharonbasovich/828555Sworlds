@@ -1,74 +1,76 @@
 #include "main.h"
 #include "config.h"
-#include "lemlib/api.hpp" // IWYU pragma: keep
-#include <queue>
 #include "functions.h"
+#include "lemlib/api.hpp" // IWYU pragma: keep
 
-// toggles
-bool intake = false;
-bool outake = false;
-int cooldown = 0;
-bool check = false;
+#include <cmath>
+#include <limits>
 
-double wallAngle;
-int state = 0;
-double target = 0;
-double toutput = 0;
-bool doPID = true;
-bool doHoldPID = false;
-double holdTarget = 0;
+// Operator and mechanism state shared with the lightweight PROS tasks below.
+bool intakeEnabled = false;
+bool outtakeEnabled = false;
+int intakeRestartCooldownTicks = 0;
+bool intakeRestartPending = false;
 
-class MockIMU : public pros::Imu
+enum class WallStakeState : int
+{
+	bottom = 0,
+	load = 1,
+	score = 2,
+};
+
+WallStakeState wallStakeState = WallStakeState::bottom;
+
+WallStakeState nextWallStakeState(WallStakeState current)
+{
+	if (current == WallStakeState::bottom) return WallStakeState::load;
+	return WallStakeState::score;
+}
+
+WallStakeState previousWallStakeState(WallStakeState current)
+{
+	if (current == WallStakeState::score) return WallStakeState::load;
+	return WallStakeState::bottom;
+}
+
+bool wallStakePidEnabled = true;
+bool wallStakeHoldEnabled = false;
+
+class CalibratedImu : public pros::Imu
 {
 public:
-	MockIMU(int port, double gain)
-		: pros::Imu(port), imu_gain(gain) {}
+	CalibratedImu(int port, double headingScale)
+		: pros::Imu(port), heading_scale(headingScale) {}
 
 	double get_rotation() const override
 	{
 		double raw = pros::Imu::get_rotation();
 		if (raw == PROS_ERR_F)
-			return NAN;
-		return raw * imu_gain;
+			return std::numeric_limits<double>::quiet_NaN();
+		return raw * heading_scale;
 	}
 
 private:
-	double imu_gain;
+	double heading_scale;
 };
 
-MockIMU imu(IMU, 361.5 / 360.0);
-
-// spin right decreases 1.3 degrees
-//  358.6, 357.0, 355.6
-
-// 360/361.5
-//  358.2, 355.5, 354.6
-
-// 361.5/360
-//  358.3, 356.1, 354.9
-
-// spin left
-//  1.5, 2.9, 4.3
-
-// 360/361.5
-// 1.3, 3.1, 4.8
-
-// 361.5/360
-// 1.2, 2.2, 4.4
+// Empirical heading scale correction measured during repeated full rotations.
+constexpr double kImuHeadingScale = 361.5 / 360.0;
+CalibratedImu imu(IMU, kImuHeadingScale);
 
 lemlib::Drivetrain drivetrain(&left_mg,					  // left motor group
 							  &right_mg,				  // right motor group
-							  11,						  // 12 inch track width
+							  11,						  // tuned track width, in inches
 							  lemlib::Omniwheel::NEW_325, // using new 3.25" omnis
-							  450,						  // drivetrain rpm is 450
+							  DRIVE_RPM,						  // drivetrain rpm is 450
 							  2							  // horizontal drift is 2 (for now)
 );
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_odom, lemlib::Omniwheel::NEW_2, 0.5);
-lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel 1, set to null
-							nullptr,				  // vertical tracking wheel 2, set to nullptr as we are using IMEs
-							nullptr,				  // horizontal tracking wheel 1
-							nullptr,				  // horizontal tracking wheel 2, set to nullptr as we don't have a second one
-							&imu					  // inertial sensor
+lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
+							nullptr,				  // no second vertical tracking wheel
+							nullptr,				  // no horizontal tracking wheel
+							nullptr,				  // no second horizontal tracking wheel
+							&imu					  // calibrated inertial sensor
 );
 
 // lateral PID controller
@@ -95,56 +97,19 @@ lemlib::ControllerSettings angular_controller(3.2, // proportional gain (kP)
 											  0	   // maximum acceleration (slew)
 );
 
-lemlib::ExpoDriveCurve
-	steer_curve(3,	  // joystick deadband out of 127
-				10,	  // minimum output where drivetrain will move out of 127
-				1.019 // expo curve gain0
-	);
-
-lemlib::ExpoDriveCurve
-	throttle_curve(3,	 // joystick deadband out of 127
-				   10,	 // minimum output where drivetrain will move out of 127
-				   1.019 // expo curve gain
-	);
-
 lemlib::Chassis chassis(drivetrain,			// drivetrain settings
 						lateral_controller, // lateral PID settings
 						angular_controller, // angular PID settings
 						sensors				// odometry sensors
-											// &throttle_curve, &steer_curve
 );
 
-/**
- * Runs while the robot is in the disabled state of Field Management System or
- * the VEX Competition Switch, following either autonomous or opcontrol. When
- * the robot is enabled, this task will exit.
- */
+// PROS lifecycle callbacks. The robot has no disabled-mode behavior or
+// competition-time autonomous selector in this configuration.
 void disabled() {}
 
-/**
- * Runs after initialize(), and before autonomous when connected to the Field
- * Management System or the VEX Competition Switch. This is intended for
- * competition-specific initialization routines, such as an autonomous selector
- * on the LCD.
- *
- * This task will exit when the robot is enabled and autonomous or opcontrol
- * starts.
- */
 void competition_initialize() {}
 
-/**
- * Runs the user autonomous code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the autonomous
- * mode. Alternatively, this function may be called in initialize or opcontrol
- * for non-competition testing purposes.
- *
- * If the robot is disabled or communications is lost, the autonomous task
- * will be stopped. Re-enabling the robot will restart the task, not re-start it
- * from where it left off.
- */
-
-void MiddleMogoBLUE()
+void middleMogoBlue()
 {
 	// === Set Start Position ===
 	chassis.setPose(53, -24, 90); // mirrored X and heading
@@ -199,66 +164,59 @@ void MiddleMogoBLUE()
 	chassis.moveToPoint(16.15, -56, 2000);
 }
 
-pros::Controller controller(pros::E_CONTROLLER_MASTER);
-
-bool jam = true;
+// The anti-jam task is implemented below but is intentionally opt-in: its
+// task creation remains disabled in the competition entry points until it is
+// revalidated on the current mechanism configuration.
+bool antiJamEnabled = true;
 
 void antiJam()
 {
-	float threshold = 10.0;
-	float previous = 100.0;
+	constexpr double kJamVelocityThreshold = 10.0;
+	constexpr int kJamReverseDurationMs = 200;
+	constexpr int kJamSamplePeriodMs = 1000;
+	double previousVelocity = 100.0;
+
 	while (true)
 	{
-		if (intake && jam && (!lift.is_extended()))
+		const double currentVelocity = intakeMotor.get_actual_velocity();
+		if (intakeEnabled && antiJamEnabled && !lift.is_extended())
 		{
-			if (intakeMotor.get_actual_velocity() < threshold && previous < threshold)
+			if (currentVelocity < kJamVelocityThreshold &&
+				previousVelocity < kJamVelocityThreshold)
 			{
-				if (state == 1)
+				if (wallStakeState == WallStakeState::load)
 				{
-					intake = false;
+					intakeEnabled = false;
 					intakeStop();
 				}
 				else
 				{
 					intakeBackward();
-					pros::delay(200);
+					pros::delay(kJamReverseDurationMs);
 					intakeForward();
 				}
 			}
 		}
-		previous = intakeMotor.get_actual_velocity();
-		pros::delay(1000);
+		previousVelocity = currentVelocity;
+		pros::delay(kJamSamplePeriodMs);
 	}
 }
 
 void holdPID()
 {
-
-	const double tkP = 0.7; //
-	const double tkI = 0;	// 00004;//lower the more perscise
-	const double tkD = 0.5; // 4larger the stronger the the kD is so response is quicker
-	const double kCos = 20;
-
-	double terror = 0;
-	double tprevious_error = 0;
-	double tintegral = 0;
-	double tderivative = 0;
+	constexpr double kGravityFeedforward = 20.0;
+	constexpr double kPositionUnitsToDegrees = 0.01;
+	constexpr double kDegreesToRadians = 0.017453;
 
 	while (true)
 	{
-
-		if (doHoldPID)
+		if (wallStakeHoldEnabled)
 		{
-			wallAngle = lbRotation.get_position() / 100;
-			terror = holdTarget - wallAngle;
-			tintegral += terror;
-			tderivative = terror - tprevious_error;
-			toutput = tkP * terror + tkI * tintegral + tkD * tderivative;
-			// lbMotor.move(toutput);
-			lbMotor.move(cos(((lbRotation.get_position() / 100)) * 0.017453) * kCos);
-			//  wall_motor.move(cos(((wall_rotation.get_position() / 100) - 40) * 0.017453) * kCos);
-			// wall_motor.move(toutput);
-			tprevious_error = terror;
+			const double wallAngle = lbRotation.get_position() * kPositionUnitsToDegrees;
+			// Holding uses gravity feedforward only; the calculated PID term was
+			// never sent to the motor in the competition implementation.
+			lbMotor.move(
+				std::cos(wallAngle * kDegreesToRadians) * kGravityFeedforward);
 		}
 		pros::delay(20);
 	}
@@ -266,173 +224,152 @@ void holdPID()
 
 void wallPID()
 {
+	// Setpoints are rotation-sensor centidegrees retained from the tuned
+	// competition configuration.
+	constexpr double kBottomPosition = 200.0;
+	constexpr double kLoadPosition = 170.0;
+	constexpr double kScorePosition = 35.0;
+	constexpr double kP = 1.6;
+	constexpr double kI = 0.0;
+	constexpr double kD = 0.5;
+	constexpr double kGravityFeedforward = 8.5;
+	constexpr double kPositionUnitsToDegrees = 0.01;
+	constexpr double kDegreesToRadians = 0.017453;
 
-	double bottom = 200;
-	double load = 170;
-	double score = 35;
-
-	const double tkP = 1.6; //
-	const double tkI = 0;	// 00004;//lower the more perscise
-	const double tkD = 0.5; // 4larger the stronger the the kD is so response is quicker
-	const double kCos = 8.5;
-
-	double terror = 0;
-	double tprevious_error = 0;
-	double tintegral = 0;
-	double tderivative = 0;
+	double previousError = 0.0;
+	double integral = 0.0;
 
 	while (true)
 	{
-
-		if (doPID)
+		if (wallStakePidEnabled)
 		{
-			switch (state)
+			double targetPosition = kBottomPosition;
+			switch (wallStakeState)
 			{
-			case 0:
-				target = bottom;
+			case WallStakeState::bottom:
+				targetPosition = kBottomPosition;
 				break;
-			case 1:
-				target = load;
+			case WallStakeState::load:
+				targetPosition = kLoadPosition;
 				break;
-			case 2:
-				target = score;
+			case WallStakeState::score:
+				targetPosition = kScorePosition;
 				break;
-
 			default:
-				target = bottom;
 				break;
 			}
 
-			wallAngle = lbRotation.get_position() / 100;
-			terror = target - wallAngle;
-			tintegral += terror;
-			tderivative = terror - tprevious_error;
-			toutput = tkP * terror + tkI * tintegral + tkD * tderivative;
-			// lbMotor.move(toutput);
-			lbMotor.move(toutput + cos(((lbRotation.get_position() / 100)) * 0.017453) * kCos);
-			//  wall_motor.move(cos(((wall_rotation.get_position() / 100) - 40) * 0.017453) * kCos);
-			// wall_motor.move(toutput);
-			tprevious_error = terror;
+			const double wallAngle = lbRotation.get_position() * kPositionUnitsToDegrees;
+			const double error = targetPosition - wallAngle;
+			integral += error;
+			const double derivative = error - previousError;
+			const double output = kP * error + kI * integral + kD * derivative;
+			// Feedback corrects position error while the cosine term offsets the
+			// linkage's changing gravity torque across its travel.
+			lbMotor.move(
+				output +
+				std::cos(wallAngle * kDegreesToRadians) * kGravityFeedforward);
+			previousError = error;
 		}
 		pros::delay(20);
 	}
 }
 
-bool hold = false;
-bool hasRing = false;
-int holdProximity = 0;
+constexpr int kRingHoldProximity = 100;
+
+bool holdNextRing = false;
 void holdRing()
 {
-	// detects if ring is held or not
-	// hasRing is constantly updated for if a ring is detected or not
-	// set hold to true if intake should stop to hold ring when it is detected or false otherwise
+	// When a route requests a hold, stop the intake as soon as the optical
+	// sensor sees a ring in the intake path.
 	while (true)
 	{
-		holdProximity = ring_color.get_proximity();
-		if (holdProximity > 100)
+		const int holdProximity = ring_color.get_proximity();
+		if (holdProximity > kRingHoldProximity)
 		{
-			if (hold)
+			if (holdNextRing)
 			{
-				// pros::delay(100);
 				intakeMotor.move(0);
-				hold = false;
+				holdNextRing = false;
 			}
-			hasRing = true;
-		}
-		else
-		{
-			hasRing = false;
 		}
 		pros::delay(10);
 	}
 }
 
-bool isRed = IS_RED;
+const bool allianceIsRed = kAllianceIsRed;
 float hue = -1;
-bool sort = true;
-int currentRed = 0;
-bool hasCurrent = false;
-bool hasPrevious = false;
+bool colorSortingEnabled = true;
 int proximity = 0;
-int previousColour = 0;
-int previousDist = 0;
-int ringColour = 0;
-// 0 is none, 1 is red, 2 is blue
+enum class RingColor : int
+{
+	none = 0,
+	red = 1,
+	blue = 2,
+};
 
-int distance = 0;
-std::deque<int> intakeQ;
-// 1 is a red ring, 2 is a blue ring
+RingColor previousRingColor = RingColor::none;
+RingColor ringColor = RingColor::none;
+
+constexpr float kRedHueUpperBound = 25.0;
+constexpr float kBlueHueLowerBound = 150.0;
+constexpr int kOpticalLedPwm = 100;
+constexpr int kOpposingRingDetectionDelayMs = 115;
+constexpr int kOpposingRingStopDurationMs = 100;
+constexpr int kOpposingRingReverseDurationMs = 200;
+
 void colorSort()
 {
-	ring_color.set_led_pwm(100);
-	intakeQ.clear();
+	ring_color.set_led_pwm(kOpticalLedPwm);
+	previousRingColor = RingColor::none;
+	ringColor = RingColor::none;
 	pros::delay(10);
 	while (true)
 	{
 		hue = ring_color.get_hue();
-		// distance = ring_distance.get_distance();
 		proximity = ring_color.get_proximity();
 
-		if (sort)
+		if (colorSortingEnabled)
 		{
-			if ((hue < 25) && (proximity > RING_PROXIMITY))
+			// These empirically tuned hue/proximity thresholds classify rings
+			// only when the optical sensor is close enough to the intake path.
+			if ((hue < kRedHueUpperBound) && (proximity > kRingColorProximity))
 			{
-				ringColour = 1;
+				ringColor = RingColor::red;
 			}
-			else if ((hue > 150) && (proximity > RING_PROXIMITY))
+			else if ((hue > kBlueHueLowerBound) && (proximity > kRingColorProximity))
 			{
-				ringColour = 2;
+				ringColor = RingColor::blue;
 			}
 			else
 			{
-				ringColour = 0;
+				ringColor = RingColor::none;
 			}
 
-			if (ringColour != previousColour && ringColour != 0)
+			if (ringColor != previousRingColor && ringColor != RingColor::none)
 			{
-				if (ringColour == 1 && (!isRed))
+				if (ringColor == RingColor::red && !allianceIsRed)
 				{
-					// pros::delay(20);
-					pros::delay(115);
+					pros::delay(kOpposingRingDetectionDelayMs);
 					intakeStop();
-					pros::delay(100);
-					// intakeForward();
+					pros::delay(kOpposingRingStopDurationMs);
 					intakeBackward();
-					pros::delay(200);
+					pros::delay(kOpposingRingReverseDurationMs);
 					intakeForward();
 				}
 
-				if (ringColour == 2 && (isRed))
+				if (ringColor == RingColor::blue && allianceIsRed)
 				{
-					// pros::delay(20);
-					pros::delay(115);
+					pros::delay(kOpposingRingDetectionDelayMs);
 					intakeStop();
-					pros::delay(100);
-					// intakeForward();
+					pros::delay(kOpposingRingStopDurationMs);
 					intakeBackward();
-					pros::delay(200);
+					pros::delay(kOpposingRingReverseDurationMs);
 					intakeForward();
 				}
-
-				// intakeQ.push_back(ringColour);
 			}
 
-			previousColour = ringColour;
-
-			// if (distance < RING_DISTANCE_THRESHOLD && previousDist >= RING_DISTANCE_THRESHOLD && !intakeQ.empty())
-			// {
-			// 	if ((IS_RED && intakeQ.front() == 2) || (!IS_RED && intakeQ.front() == 1))
-			// 	{
-			// 		pros::delay(60);
-			// 		intakeStop();
-			// 		pros::delay(400);
-			// 		intakeForward();
-			// 	}
-
-			// 	intakeQ.pop_front();
-			// }
-
-			// previousDist = distance;
+			previousRingColor = ringColor;
 		}
 		pros::delay(10);
 	}
@@ -455,33 +392,27 @@ void initialize()
 	pros::delay(10);
 	chassis.calibrate(); // calibrate sensors
 	pros::delay(10);
-	pros::lcd::initialize(); // initialize brain screen
-	pros::delay(10);
-	pros::Task screen_task([&]()
-						   {
-        while (true) {
-            // pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
-            // pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
-            // pros::lcd::print(2, "Theta: %f", ((chassis.getPose().theta) )); // heading
-            // pros::lcd::print(3, "IMU HEADING: %f", imu.get_heading());
-
-			pros::lcd::print(0, "intake velocity: %f", intakeMotor.get_actual_velocity()); //
-			pros::lcd::print(1, "hue: %f", hue); //
+	pros::Task screen_task([]()
+	{
+		while (true)
+		{
+			pros::lcd::print(0, "intake velocity: %f", intakeMotor.get_actual_velocity());
+			pros::lcd::print(1, "hue: %f", hue);
 			pros::lcd::print(2, "distance: %d", ring_distance.get());
 			pros::lcd::print(3, "proximity: %d", proximity);
-			pros::lcd::print(4, "qfront %d", intakeQ.front());
-			//pros::lcd::print(5, "ringcolor: %d", ringColour); // x
+			pros::lcd::print(4, "ring color: %d", static_cast<int>(ringColor));
 			pros::lcd::print(5, "Wall Angle: %f", lbRotation.get_angle());
 			pros::lcd::print(6, "Y: %f", chassis.getPose().y);
 			pros::delay(20);
-        } });
+		}
+	});
 }
 
-void rightSawp()
+void rightSwap()
 {
 	chassis.setPose(58, 15, 143);
 
-	doPID = false;
+	wallStakePidEnabled = false;
 	lbMotor.move(-127);
 	pros::delay(500);
 	lbMotor.move(0);
@@ -496,7 +427,7 @@ void rightSawp()
 	clamp.extend();
 	pros::delay(300);
 	lbRotation.set_position(20000);
-	doPID = true;
+	wallStakePidEnabled = true;
 
 	// get ring 1
 	chassis.turnToPoint(16, 45, 600);
@@ -522,7 +453,7 @@ void rightSawp()
 	chassis.moveToPoint(44, 10, 800);
 	pros::delay(200);
 	intakeForward();
-	hold = true;
+	holdNextRing = true;
 	lift.extend();
 	chassis.moveToPoint(44, 2, 1000, {.maxSpeed = 80});
 	// pros::delay(500);
@@ -537,15 +468,14 @@ void rightSawp()
 	// go to bar
 	chassis.moveToPoint(20, 0, 2000, {.maxSpeed = 80});
 	// pros::delay(800);
-	// // state==2;
 	pros::delay(10000);
 }
 
-void rightMidSawp()
+void rightMidSwap()
 {
 	chassis.setPose(58, 15, 143);
 
-	doPID = false;
+	wallStakePidEnabled = false;
 	lbMotor.move(-127);
 	pros::delay(500);
 	lbMotor.move(0);
@@ -560,7 +490,7 @@ void rightMidSawp()
 	clamp.extend();
 	pros::delay(300);
 	lbRotation.set_position(20000);
-	doPID = true;
+	wallStakePidEnabled = true;
 
 	// get ring 1
 	chassis.turnToPoint(16, 45, 600);
@@ -578,12 +508,11 @@ void rightMidSawp()
 	// chassis.moveToPoint(34, 60, 1000, {.forwards = false});
 	// pros::delay(1500);
 	chassis.turnToPoint(19, -6, 800);
-	state += 2;
+	wallStakeState = WallStakeState::score;
 	pros::delay(500);
 	// go to bar
 	chassis.moveToPoint(19, -6, 5000, {.maxSpeed = 40});
 	// pros::delay(800);
-	// // state==2;
 	pros::delay(10000);
 }
 
@@ -591,7 +520,7 @@ void rightAvoidRing()
 {
 	chassis.setPose(58, 15, 143);
 
-	doPID = false;
+	wallStakePidEnabled = false;
 	lbMotor.move(-127);
 	pros::delay(500);
 	lbMotor.move(0);
@@ -606,7 +535,7 @@ void rightAvoidRing()
 	clamp.extend();
 	pros::delay(300);
 	lbRotation.set_position(20000);
-	doPID = true;
+	wallStakePidEnabled = true;
 
 	// get ring 1
 	chassis.turnToPoint(16, 45, 600);
@@ -626,20 +555,19 @@ void rightAvoidRing()
 	// chassis.moveToPoint(34, 60, 1000, {.forwards = false});
 	// pros::delay(1500);
 	chassis.turnToPoint(19, -6, 800);
-	state += 2;
+	wallStakeState = WallStakeState::score;
 	pros::delay(500);
 	// go to bar
 	chassis.moveToPoint(19, -6, 5000, {.maxSpeed = 50});
 	// pros::delay(800);
-	// // state==2;
 	pros::delay(10000);
 }
 
-void leftSawp()
+void leftSwap()
 {
 	chassis.setPose(58, -15, 37);
 
-	doPID = false;
+	wallStakePidEnabled = false;
 	lbMotor.move(-127);
 	pros::delay(500);
 	lbMotor.move(0);
@@ -654,7 +582,7 @@ void leftSawp()
 	clamp.extend();
 	pros::delay(300);
 	lbRotation.set_position(20000);
-	doPID = true;
+	wallStakePidEnabled = true;
 
 	// get ring 1
 	chassis.turnToPoint(16, -45, 600);
@@ -680,7 +608,7 @@ void leftSawp()
 	chassis.moveToPoint(44, -10, 800);
 	pros::delay(200);
 	intakeForward();
-	hold = true;
+	holdNextRing = true;
 	lift.extend();
 	chassis.moveToPoint(44, -2, 1000, {.maxSpeed = 80});
 	// pros::delay(500);
@@ -695,7 +623,6 @@ void leftSawp()
 	// go to bar
 	chassis.moveToPoint(20, 0, 2000, {.maxSpeed = 80});
 	// pros::delay(800);
-	// // state==2;
 	pros::delay(10000);
 }
 
@@ -763,7 +690,7 @@ void rightTower()
 	// pros::delay(1000);
 
 	chassis.turnToPoint(-24, 12, 800);
-	state += 2;
+	wallStakeState = WallStakeState::score;
 	pros::delay(500);
 	chassis.moveToPoint(-20, 12, 5000, {.maxSpeed = 40});
 	pros::delay(10000);
@@ -841,7 +768,7 @@ void leftTower()
 	// chassis.moveToPoint(-50, 52, 1000, {.forwards = false});
 	// pros::delay(1000);
 	chassis.turnToPoint(-24, -12, 800);
-	state += 2;
+	wallStakeState = WallStakeState::score;
 	pros::delay(500);
 	chassis.moveToPoint(-20, -12, 5000, {.maxSpeed = 40});
 	pros::delay(10000);
@@ -858,10 +785,10 @@ void leftTower()
 
 void rightRingRush()
 {
-	// this is for blue side, which is when you are on the right side negative corner
+	// Ring-rush route from the positive-y starting corner.
 	chassis.setPose(54, 17, 295);
 	intakeForward();
-	hold = true;
+	holdNextRing = true;
 	rDoinker.extend();
 	// rush to ring cluster
 	chassis.moveToPoint(15, 38, 1500, {.minSpeed = 127});
@@ -896,7 +823,7 @@ void rightRingRush()
 	chassis.turnToPoint(47, -4, 700);
 	chassis.moveToPoint(47, 25, 500);
 	pros::delay(1500);
-	state += 2;
+	wallStakeState = WallStakeState::score;
 	chassis.moveToPoint(15, -8, 10000, {.maxSpeed = 40});
 	pros::delay(10000);
 
@@ -904,7 +831,6 @@ void rightRingRush()
 	// pros::delay(100);
 	// intakeForward();
 	// lift.extend();
-	// state++;
 	// pros::delay(400);
 	// lift.retract();
 	// pros::delay(200);
@@ -917,7 +843,7 @@ void rightRingRush()
 	// chassis.moveToPoint(51, -3, 500);
 	// intakeForward();
 
-	// doPID = false;
+	// wallStakePidEnabled = false;
 	// intakeForward();
 
 	// pros::delay(100);
@@ -932,10 +858,10 @@ void rightRingRush()
 void leftOld()
 {
 
-	// this is for blue side, which is when you are on the right side negative corner
+	// Earlier ring-rush variant from the negative-y starting corner.
 	chassis.setPose(54, -17, 245);
 	intakeForward();
-	hold = true;
+	holdNextRing = true;
 	lDoinker.extend();
 	// rush to ring cluster
 	chassis.moveToPoint(15, -38, 1500, {.minSpeed = 127});
@@ -970,7 +896,7 @@ void leftOld()
 	chassis.turnToPoint(47, 4, 700);
 	chassis.moveToPoint(47, -25, 500);
 	pros::delay(1500);
-	state += 2;
+	wallStakeState = WallStakeState::score;
 	chassis.moveToPoint(21, -7, 10000, {.maxSpeed = 60});
 
 	pros::delay(10000);
@@ -978,10 +904,10 @@ void leftOld()
 
 void leftRingRush()
 {
-	// this is for blue side, which is when you are on the right side negative corner
+	// Active ring-rush route from the negative-y starting corner.
 	chassis.setPose(54, -17, 245);
 	intakeForward();
-	hold = true;
+	holdNextRing = true;
 	lDoinker.extend();
 	// rush to ring cluster
 	chassis.moveToPoint(15, -38, 1500, {.minSpeed = 127});
@@ -998,7 +924,7 @@ void leftRingRush()
 	clamp.extend();
 
 	// score 3 rings
-	hold = false;
+	holdNextRing = false;
 	intakeForward();
 	chassis.turnToPoint(31, -53, 500);
 	chassis.moveToPoint(31, -53, 2000, {.maxSpeed = 40});
@@ -1018,7 +944,6 @@ void leftRingRush()
 	chassis.turnToPoint(47, 4, 700);
 	chassis.moveToPoint(47, -20, 10000);
 	pros::delay(10000);
-	// state += 2;
 	// chassis.moveToPoint(15, 8, 10000, {.maxSpeed = 40});
 
 	// pros::delay(10000);
@@ -1027,7 +952,6 @@ void leftRingRush()
 	// pros::delay(100);
 	// 	intakeForward();
 	// lift.extend();
-	// state++;
 	// 	pros::delay(400);
 	// 	lift.retract();
 	// 	pros::delay(200);
@@ -1041,7 +965,7 @@ void leftRingRush()
 	// chassis.moveToPoint(51, 3, 500);
 	// 	intakeForward();
 
-	// doPID = false;
+	// wallStakePidEnabled = false;
 	// 	intakeForward();
 
 	// pros::delay(100);
@@ -1055,21 +979,14 @@ void leftRingRush()
 
 void autonomous()
 {
-	pros::Task ringhold_task(holdRing);
-	pros::Task wallstake_task(wallPID);
-	pros::Task holdstake_task(holdPID);
-	pros::Task sort_task(colorSort);
+	colorSortingEnabled = true;
+	pros::Task ringHoldTask(holdRing);
+	pros::Task wallStakeTask(wallPID);
+	pros::Task holdStakeTask(holdPID);
+	pros::Task colorSortTask(colorSort);
 
-	// rightSawp();
-	// rightRingRush();
+	// This is the active competition route in the checked-in configuration.
 	leftRingRush();
-	// rightRingRush();
-	// rightAvoidRing();
-	// sawp();
-	// leftRingRush();
-	// leftSawp();
-	// leftTower();
-	// pros::Task antiJam_task(antiJam);
 }
 
 /**
@@ -1088,32 +1005,23 @@ void autonomous()
 
 void opcontrol()
 {
-
-	pros::Task ringhold_task(holdRing);
-
-	pros::Task wallstake_task(wallPID);
-	pros::Task holdstake_task(holdPID);
-
-	// pros::Task antiJam_task(antiJam);
-	pros::Task sort_task(colorSort);
-	// sort = true;
-	doPID = true;
-	// loop forever
+	colorSortingEnabled = true;
+	pros::Task ringHoldTask(holdRing);
+	pros::Task wallStakeTask(wallPID);
+	pros::Task holdStakeTask(holdPID);
+	pros::Task colorSortTask(colorSort);
+	wallStakePidEnabled = true;
 
 	while (true)
 	{
+		const int leftY = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+		const int rightX = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-		// get left y and right x positions
-		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-		int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-
-		// move the robot
-		chassis.arcade(leftY, rightX); /// UNCOMMENT
+		chassis.arcade(leftY, rightX);
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))
 		{
-			sort = false;
-			// hold = !hold;
+			colorSortingEnabled = false;
 		}
 
 		// extend clamp on press
@@ -1143,9 +1051,9 @@ void opcontrol()
 		// overrides outtaking when pressed
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A))
 		{
-			intake = !intake;
-			outake = 0;
-			if (intake)
+			intakeEnabled = !intakeEnabled;
+			outtakeEnabled = false;
+			if (intakeEnabled)
 			{
 				intakeForward();
 			}
@@ -1159,9 +1067,9 @@ void opcontrol()
 		// overrides intaking when pressed
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B))
 		{
-			outake = !outake;
-			intake = 0;
-			if (outake)
+			outtakeEnabled = !outtakeEnabled;
+			intakeEnabled = false;
+			if (outtakeEnabled)
 			{
 				intakeBackward();
 			}
@@ -1171,65 +1079,56 @@ void opcontrol()
 			}
 		}
 
-		// if lb is in bottom range
-		// if (160.0 < lbRotation.get_angle() && lbRotation.get_angle() < 210.0)
-		// {
-		// when r1 is pressed, moves wall stake mechanism forward by one state
-		// unless wall stake mechanism is already fully extended
-		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1) && doPID)
+		// R1 advances the wall-stake mechanism through bottom -> load -> score.
+		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1) && wallStakePidEnabled)
 		{
-
-			if (state == 1)
+			if (wallStakeState == WallStakeState::load)
 			{
 				intakeMotor.move(-50);
 				pros::delay(150);
 				intakeMotor.move(0);
 				pros::delay(10);
-				if (intake)
+				if (intakeEnabled)
 				{
-					intake = false;
+					intakeEnabled = false;
 				}
 			}
-			if (state != 2)
-			{
-				state++;
-			}
+			wallStakeState = nextWallStakeState(wallStakeState);
 		}
 
-		// when r2 is pressed, moves wall stake mechanism backward by one state
-		// unless wall stake mechanism is already fully retracted
-		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2) && doPID)
+		// R2 moves the wall-stake mechanism back one state.
+		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2) && wallStakePidEnabled)
 		{
-
-			if (state != 0)
+			if (wallStakeState != WallStakeState::bottom)
 			{
-				state--;
-				if (!intake)
+				wallStakeState = previousWallStakeState(wallStakeState);
+				if (!intakeEnabled)
 				{
-					cooldown = 20;
-					check = true;
+					intakeRestartCooldownTicks = 20;
+					intakeRestartPending = true;
 				}
 			}
 		}
 
-		if (check)
+		if (intakeRestartPending)
 		{
-			if (cooldown == 0)
+			// Process the delayed intake restart once per driver-loop tick.
+			if (intakeRestartCooldownTicks == 0)
 			{
-				check = false;
+				intakeRestartPending = false;
 				intakeForward();
-				intake = true;
+				intakeEnabled = true;
 			}
-			cooldown--;
+			intakeRestartCooldownTicks--;
 		}
 
 		if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X))
 		{
 
-			doPID = !doPID;
-			if (doPID)
+			wallStakePidEnabled = !wallStakePidEnabled;
+			if (wallStakePidEnabled)
 			{
-				doHoldPID = false;
+				wallStakeHoldEnabled = false;
 				lbMotor.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 			}
 			else
@@ -1240,25 +1139,21 @@ void opcontrol()
 			intakeStop();
 		}
 
-		if (!doPID)
+		if (!wallStakePidEnabled)
 		{
 			if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 			{
-				lbMotor.move(-127 * LB_SPEED);
-				doHoldPID = false;
+				lbMotor.move(-127 * kLiftManualScale);
+				wallStakeHoldEnabled = false;
 			}
 			else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 			{
-				lbMotor.move(127 * LB_SPEED);
-				doHoldPID = false;
+				lbMotor.move(127 * kLiftManualScale);
+				wallStakeHoldEnabled = false;
 			}
 			else
 			{
-				if (!doHoldPID)
-				{
-					holdTarget = lbRotation.get_position() / 100;
-				}
-				doHoldPID = true;
+				wallStakeHoldEnabled = true;
 			}
 		}
 
@@ -1267,18 +1162,7 @@ void opcontrol()
 			lift.toggle();
 		}
 
-		if (check)
-		{
-			if (cooldown == 0)
-			{
-				check = false;
-				// intakeForward();
-				intake = true;
-			}
-			cooldown--;
-		}
-
-		// delay to save resources
+		// Yield so the driver loop and background mechanism tasks remain responsive.
 		pros::delay(10);
 	}
 }

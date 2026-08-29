@@ -1,13 +1,11 @@
 
-
-#include "pros/misc.hpp"
 #pragma once
+
 #include "main.h"
-#include "lemlib/api.hpp" // IWYU pragma: keep
 
 // drive motors
-#define IS_RED true
-#define LB_SPEED 0.5 // 0-1 the speed of the lb in manual mode
+inline constexpr bool kAllianceIsRed = true;
+inline constexpr double kLiftManualScale = 0.5; // 0-1 manual wall-stake speed
 
 #define LEFT_FRONT_DRIVE 1
 #define LEFT_MIDDLE_DRIVE -2
@@ -18,8 +16,6 @@
 #define RIGHT_BACK_DRIVE 20
 
 // drive config
-#define DRIVE_GEARSET pros::E_MOTOR_GEARSET_06
-#define WHEEL_DIAMETER 3.25
 #define DRIVE_RPM 450
 
 // intake motors
@@ -32,32 +28,20 @@
 #define LDOINKER 'A'
 #define CLAMP 'H'
 #define RDOINKER 'B'
-#define LIFT 'G' // h
+#define LIFT 'G'
 
 // sensors
 #define LB_ROTATION 8
 #define IMU 14
 #define VERTICAL_ODOM 13
-#define HORIZONTAL_ODOM 0 //not for now
 
-// ring hold
+// Ring sensing
 #define RING_DISTANCE 6
-//**IN MILLIMETERS** the value that the ring must be closer than to be detected
-#define RING_DISTANCE_THRESHOLD 20
-#define RING_PROXIMITY 200
+inline constexpr int kRingColorProximity = 200;
 
-// color sort
+// Color sorting
 #define RING_COLOR 7
-//*IN MILLISECONDS* the time that it takes for the ring to reach the top of the hooks from when the color sensor detects it*/
-#define COLOR_TIME 500
 inline pros::Controller master(pros::E_CONTROLLER_MASTER);
-
-inline pros::Motor left_front_drive(LEFT_FRONT_DRIVE);
-inline pros::Motor left_middle_drive(LEFT_MIDDLE_DRIVE);
-inline pros::Motor left_back_drive(LEFT_BACK_DRIVE);
-inline pros::Motor right_front_drive(RIGHT_FRONT_DRIVE);
-inline pros::Motor right_middle_drive(RIGHT_MIDDLE_DRIVE);
-inline pros::Motor right_back_drive(RIGHT_BACK_DRIVE);
 
 inline pros::MotorGroup left_mg({LEFT_FRONT_DRIVE, LEFT_MIDDLE_DRIVE, LEFT_BACK_DRIVE}, pros::MotorGearset::blue);
 inline pros::MotorGroup right_mg({RIGHT_FRONT_DRIVE, RIGHT_MIDDLE_DRIVE, RIGHT_BACK_DRIVE}, pros::MotorGearset::blue);
@@ -66,7 +50,6 @@ inline pros::Rotation lbRotation(LB_ROTATION);
 inline pros::Motor lbMotor(LB_MOTOR);
 
 inline pros::Motor intakeMotor(INTAKE_HOOKS);
-//inline pros::Imu imu(IMU);
 
 inline pros::adi::Pneumatics clamp(CLAMP, false);
 inline pros::adi::Pneumatics lDoinker(LDOINKER, false);
@@ -77,4 +60,3 @@ inline pros::Distance ring_distance(RING_DISTANCE);
 inline pros::Optical ring_color(RING_COLOR);
 
 inline pros::Rotation vertical_odom(VERTICAL_ODOM);
-inline pros::Rotation horizontal_odom(HORIZONTAL_ODOM);

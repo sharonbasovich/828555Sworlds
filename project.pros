@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "withdrive",
+    "project_name": "82855SWorlds",
     "target": "v5",
     "templates": {
       "LemLib": {
@@ -27,16 +27,12 @@
           "include\\lemlib\\logger\\infoSink.hpp",
           "include\\fmt\\LICENSE",
           "firmware\\LemLib.a",
-          "include\\lemlib\\README.md",
           "include\\lemlib\\asset.hpp",
           "include\\lemlib\\util.hpp",
           "include\\lemlib\\driveCurve.hpp",
           "include\\lemlib\\logger\\message.hpp",
           "include\\lemlib\\chassis\\trackingWheel.hpp",
           "include\\fmt\\format.h",
-          "static\\example.txt",
-          "include\\lemlib\\LICENSE",
-          "include\\lemlib\\VERSION",
           "include\\lemlib\\chassis\\chassis.hpp",
           "include\\lemlib\\logger\\telemetrySink.hpp",
           "include\\fmt\\format-inl.h",
@@ -109,13 +105,12 @@
         ],
         "target": "v5",
         "user_files": [
-          "include/main.hh",
-          "include/main.hpp",
-          "src/main.cc",
           ".gitignore",
           "Makefile",
-          "src/main.c",
+          "include/config.h",
+          "include/functions.h",
           "include/main.h",
+          "src/intake.cpp",
           "src/main.cpp"
         ],
         "version": "4.1.2"
